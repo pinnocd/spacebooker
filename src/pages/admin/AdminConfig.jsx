@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Settings, Database, Check, AlertCircle, ChevronDown, ChevronRight, Eye, EyeOff, ToggleLeft, ToggleRight, Palette, Upload, X, Image } from 'lucide-react'
+import { Settings, Database, Check, AlertCircle, ChevronDown, ChevronRight, Eye, EyeOff, ToggleLeft, ToggleRight, Palette, Upload, X, Image, Loader2, Wifi, WifiOff } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { getConfig, saveConfig } from '../../utils/data'
+import { saveConfigToApi, fetchConfigFromApi } from '../../utils/apiClient'
 
 // Preset colour palettes [primary, secondary]
 const PRESETS = [
@@ -158,6 +159,9 @@ function Section({ title, children, defaultOpen = false }) {
   )
 }
 
+// DB save status per attempt
+const DB_STATUS = { idle: 'idle', saving: 'saving', ok: 'ok', error: 'error', unavailable: 'unavailable' }
+
 export default function AdminConfig() {
   const { setConfig } = useApp()
   const logoInputRef = useRef(null)
@@ -170,9 +174,14 @@ export default function AdminConfig() {
   const [dbUrl, setDbUrl] = useState('')
   const [showUrl, setShowUrl] = useState(false)
   const [requireApproval, setRequireApproval] = useState(true)
-  const [saved, setSaved] = useState(false)
-  const [copied, setCopied] = useState(false)
   const [logoError, setLogoError] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  // Save status
+  const [localStatus, setLocalStatus] = useState(DB_STATUS.idle)   // localStorage
+  const [dbStatus, setDbStatus] = useState(DB_STATUS.idle)         // database
+  const [dbError, setDbError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     const cfg = getConfig()
@@ -182,6 +191,18 @@ export default function AdminConfig() {
     setSecondaryColor(cfg.secondaryColor || '#7c3aed')
     setDbUrl(cfg.dbUrl || '')
     setRequireApproval(cfg.requireApproval !== false)
+
+    // Check if DB is reachable and load any newer values from it
+    fetchConfigFromApi().then(({ data, error }) => {
+      if (!error && data && Object.keys(data).length > 0) {
+        if (data.appName)        setAppName(data.appName)
+        if (data.logo !== undefined) setLogo(data.logo)
+        if (data.primaryColor)   setPrimaryColor(data.primaryColor)
+        if (data.secondaryColor) setSecondaryColor(data.secondaryColor)
+        if (data.requireApproval !== undefined) setRequireApproval(data.requireApproval)
+        setDbStatus(DB_STATUS.idle) // DB is reachable
+      }
+    })
   }, [])
 
   const handleLogoUpload = (e) => {
@@ -195,13 +216,42 @@ export default function AdminConfig() {
     reader.readAsDataURL(file)
   }
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    const cfg = { appName: appName.trim() || 'OfficeBook', logo, primaryColor, secondaryColor, dbUrl: dbUrl.trim(), requireApproval }
+    setSaving(true)
+    setLocalStatus(DB_STATUS.idle)
+    setDbStatus(DB_STATUS.idle)
+    setDbError('')
+
+    const cfg = {
+      appName: appName.trim() || 'OfficeBook',
+      logo,
+      primaryColor,
+      secondaryColor,
+      dbUrl: dbUrl.trim(),
+      requireApproval,
+    }
+
+    // 1. Always save to localStorage first (instant, never fails)
     saveConfig(cfg)
     setConfig(cfg)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    setLocalStatus(DB_STATUS.ok)
+
+    // 2. Try to save to database
+    setDbStatus(DB_STATUS.saving)
+    const { ok, error } = await saveConfigToApi(cfg)
+    if (ok) {
+      setDbStatus(DB_STATUS.ok)
+    } else if (error?.includes('Database not configured') || error?.includes('503')) {
+      setDbStatus(DB_STATUS.unavailable)
+    } else {
+      setDbStatus(DB_STATUS.error)
+      setDbError(error || 'Unknown error')
+    }
+
+    setSaving(false)
+    // Reset local status indicator after a few seconds
+    setTimeout(() => { setLocalStatus(DB_STATUS.idle); setDbStatus(DB_STATUS.idle) }, 5000)
   }
 
   const handleCopy = () => {
@@ -366,15 +416,56 @@ export default function AdminConfig() {
           </div>
         </div>
 
-        {/* Save */}
-        {saved && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-            <p className="text-sm text-green-700">Settings saved — colours applied live.</p>
-          </div>
-        )}
-        <button type="submit" className="btn-primary text-sm">
-          <Check className="w-4 h-4" />Save all settings
+        {/* Save status */}
+        <div className="space-y-2">
+          {/* localStorage status */}
+          {localStatus === DB_STATUS.ok && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+              <p className="text-sm text-green-700"><strong>Local storage</strong> — saved successfully. Colours applied live.</p>
+            </div>
+          )}
+
+          {/* Database status */}
+          {dbStatus === DB_STATUS.saving && (
+            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <Loader2 className="w-4 h-4 text-blue-600 flex-shrink-0 animate-spin" />
+              <p className="text-sm text-blue-700">Saving to database…</p>
+            </div>
+          )}
+          {dbStatus === DB_STATUS.ok && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <Wifi className="w-4 h-4 text-green-600 flex-shrink-0" />
+              <p className="text-sm text-green-700"><strong>Database</strong> — saved successfully.</p>
+            </div>
+          )}
+          {dbStatus === DB_STATUS.unavailable && (
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-amber-800 font-medium">Database not connected</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Set <code className="font-mono bg-amber-100 px-1 rounded">POSTGRES_URL</code> in your Vercel environment variables to enable database persistence.
+                </p>
+              </div>
+            </div>
+          )}
+          {dbStatus === DB_STATUS.error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-red-700 font-medium">Database error</p>
+                {dbError && <p className="text-xs text-red-600 mt-0.5 font-mono">{dbError}</p>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <button type="submit" disabled={saving} className="btn-primary text-sm">
+          {saving
+            ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>
+            : <><Check className="w-4 h-4" />Save all settings</>
+          }
         </button>
       </form>
 

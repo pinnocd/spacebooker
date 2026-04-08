@@ -8,6 +8,7 @@ import {
   getMemberSession, setMemberSession,
   getConfig, saveConfig,
 } from '../utils/data'
+import { fetchConfigFromApi } from '../utils/apiClient'
 
 // Hex color helpers for generating shade variants at runtime
 function hexToRgb(hex) {
@@ -66,7 +67,22 @@ export function AppProvider({ children }) {
     applyBrandColors(cfg)
   }, [applyBrandColors])
 
-  useEffect(() => { refreshData() }, [refreshData])
+  useEffect(() => {
+    // 1. Load synchronously from localStorage so UI is instant
+    refreshData()
+
+    // 2. Attempt to hydrate branding config from the database in the background.
+    //    If it succeeds, merge into localStorage and apply — DB is the source of truth.
+    fetchConfigFromApi().then(({ data, error }) => {
+      if (error || !data || Object.keys(data).length === 0) return
+      const local = getConfig()
+      // DB values override local for branding keys; preserve dbUrl from local
+      const merged = { ...local, ...data, dbUrl: local.dbUrl }
+      saveConfig(merged)
+      setConfigState(merged)
+      applyBrandColors(merged)
+    })
+  }, [refreshData, applyBrandColors])
 
   const setSpaces = useCallback((v) => { saveSpaces(v); setSpacesState(v) }, [])
   const setHours = useCallback((v) => { saveHours(v); setHoursState(v) }, [])
