@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Three interlocking circles -->
+  <!-- Left circle -->
+  <circle cx="148" cy="95" r="62" stroke="#231F20" stroke-width="16" fill="none"/>
+  <!-- Middle circle -->
+  <circle cx="200" cy="95" r="62" stroke="#231F20" stroke-width="16" fill="none"/>
+  <!-- Right circle -->
+  <circle cx="252" cy="95" r="62" stroke="#231F20" stroke-width="16" fill="none"/>
+
+  <!-- TRINITY text -->
+  <text x="200" y="203" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="52" fill="#231F20" text-anchor="middle" letter-spacing="4">TRINITY</text>
+
+  <!-- CHURCH text -->
+  <text x="200" y="252" font-family="Arial, sans-serif" font-weight="300" font-size="38" fill="#231F20" text-anchor="middle" letter-spacing="8">CHURCH</text>
+</svg>

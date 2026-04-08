@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Three interlocking circles favicon -->
+  <circle cx="30" cy="42" r="22" stroke="#231F20" stroke-width="7" fill="none"/>
+  <circle cx="50" cy="42" r="22" stroke="#231F20" stroke-width="7" fill="none"/>
+  <circle cx="70" cy="42" r="22" stroke="#231F20" stroke-width="7" fill="none"/>
+  <!-- T text below -->
+  <text x="50" y="90" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="22" fill="#231F20" text-anchor="middle" letter-spacing="1">TC</text>
+</svg>
