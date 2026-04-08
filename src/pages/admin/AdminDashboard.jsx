@@ -9,6 +9,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   Settings,
+  Database,
 } from 'lucide-react'
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns'
 import { useApp } from '../../context/AppContext'
@@ -214,6 +215,24 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-medium text-gray-900 text-sm">Manage Users</p>
                       <p className="text-xs text-gray-400">Add or remove admin accounts</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                </Link>
+              )}
+
+              {currentUser?.role === 'superadmin' && (
+                <Link
+                  to="/admin/config"
+                  className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-teal-100 rounded-lg flex items-center justify-center">
+                      <Database className="w-5 h-5 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">Configuration</p>
+                      <p className="text-xs text-gray-400">Database &amp; app settings</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />

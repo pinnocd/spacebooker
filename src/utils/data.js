@@ -6,6 +6,99 @@ const KEYS = {
   ADMIN: 'ob_admin',
   ADMIN_USERS: 'ob_admin_users',
   CURRENT_USER: 'ob_current_user',
+  MEMBERS: 'ob_members',
+  MEMBER_SESSION: 'ob_member_session',
+  CONFIG: 'ob_config',
+}
+
+// ── Members (regular users) ────────────────────────────────────────────────
+
+export function getMembers() {
+  try {
+    const raw = localStorage.getItem(KEYS.MEMBERS)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export function saveMembers(members) {
+  localStorage.setItem(KEYS.MEMBERS, JSON.stringify(members))
+}
+
+export function registerMember({ name, email, password }) {
+  const members = getMembers()
+  if (members.find((m) => m.email.toLowerCase() === email.toLowerCase())) {
+    return { error: 'An account with that email already exists.' }
+  }
+  const member = {
+    id: `member-${Date.now()}`,
+    name: name.trim(),
+    email: email.trim().toLowerCase(),
+    password,
+    status: 'pending', // pending | active | suspended
+    createdAt: new Date().toISOString(),
+  }
+  members.push(member)
+  saveMembers(members)
+  return { member }
+}
+
+export function authenticateMember(email, password) {
+  const members = getMembers()
+  return members.find(
+    (m) => m.email.toLowerCase() === email.toLowerCase() && m.password === password
+  ) || null
+}
+
+export function getMemberSession() {
+  try {
+    const raw = localStorage.getItem(KEYS.MEMBER_SESSION)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function setMemberSession(member) {
+  if (member) {
+    localStorage.setItem(KEYS.MEMBER_SESSION, JSON.stringify(member))
+  } else {
+    localStorage.removeItem(KEYS.MEMBER_SESSION)
+  }
+}
+
+export function updateMemberStatus(id, status) {
+  const members = getMembers()
+  const idx = members.findIndex((m) => m.id === id)
+  if (idx !== -1) {
+    members[idx].status = status
+    saveMembers(members)
+  }
+}
+
+// ── App config ─────────────────────────────────────────────────────────────
+
+const DEFAULT_CONFIG = {
+  dbUrl: '',
+  requireApproval: true,
+  appName: 'OfficeBook',
+  logo: '',            // base64 data URL
+  primaryColor: '#2563eb',
+  secondaryColor: '#7c3aed',
+}
+
+export function getConfig() {
+  try {
+    const raw = localStorage.getItem(KEYS.CONFIG)
+    return raw ? { ...DEFAULT_CONFIG, ...JSON.parse(raw) } : DEFAULT_CONFIG
+  } catch {
+    return DEFAULT_CONFIG
+  }
+}
+
+export function saveConfig(config) {
+  localStorage.setItem(KEYS.CONFIG, JSON.stringify(config))
 }
 
 // Default admin users

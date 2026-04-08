@@ -1,0 +1,146 @@
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { UserPlus, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Building2 } from 'lucide-react'
+import { registerMember, getConfig } from '../utils/data'
+import { useApp } from '../context/AppContext'
+
+export default function Register() {
+  const { loginMember } = useApp()
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [showPass, setShowPass] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setError('') }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    setError('')
+
+    if (!form.name.trim()) return setError('Please enter your full name.')
+    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) return setError('Please enter a valid email address.')
+    if (form.password.length < 6) return setError('Password must be at least 6 characters.')
+    if (form.password !== form.confirm) return setError('Passwords do not match.')
+
+    setLoading(true)
+    setTimeout(() => {
+      const result = registerMember({ name: form.name, email: form.email, password: form.password })
+      if (result.error) {
+        setError(result.error)
+        setLoading(false)
+        return
+      }
+
+      const cfg = getConfig()
+      if (cfg.requireApproval) {
+        // Account needs admin approval — show success but don't log in
+        setSuccess(true)
+      } else {
+        // Auto-activate and log in
+        result.member.status = 'active'
+        loginMember(result.member)
+        navigate('/')
+      }
+      setLoading(false)
+    }, 400)
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-[calc(100vh-10rem)] flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-2xl mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Account requested</h1>
+          <p className="text-gray-500 text-sm mb-6">
+            Your account has been created and is awaiting approval from an administrator.
+            You'll be able to sign in once it's approved.
+          </p>
+          <Link to="/" className="btn-primary inline-flex">Back to home</Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-[calc(100vh-10rem)] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
+            <Building2 className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Create an account</h1>
+          <p className="text-gray-500 mt-1 text-sm">Book rooms and desks in the office</p>
+        </div>
+
+        <div className="card p-6">
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="mb-4">
+              <label className="label" htmlFor="reg-name">Full name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input id="reg-name" type="text" value={form.name} onChange={set('name')}
+                  placeholder="Jane Smith" className="input pl-10" required />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="label" htmlFor="reg-email">Email address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input id="reg-email" type="email" value={form.email} onChange={set('email')}
+                  placeholder="jane@company.com" className="input pl-10" autoComplete="email" required />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="label" htmlFor="reg-password">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input id="reg-password" type={showPass ? 'text' : 'password'} value={form.password}
+                  onChange={set('password')} placeholder="Min. 6 characters"
+                  className="input pl-10 pr-10" autoComplete="new-password" required />
+                <button type="button" onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <label className="label" htmlFor="reg-confirm">Confirm password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input id="reg-confirm" type={showPass ? 'text' : 'password'} value={form.confirm}
+                  onChange={set('confirm')} placeholder="Repeat password"
+                  className="input pl-10" autoComplete="new-password" required />
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-4 flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} className="btn-primary w-full mb-4">
+              {loading
+                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating account...</>
+                : <><UserPlus className="w-4 h-4" />Create account</>
+              }
+            </button>
+
+            <p className="text-center text-sm text-gray-500">
+              Already have an account?{' '}
+              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">Sign in</Link>
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
