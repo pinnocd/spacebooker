@@ -13,6 +13,7 @@ import {
   ToggleRight,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import { createSpaceInApi, updateSpaceInApi, deleteSpaceFromApi } from '../../utils/apiClient'
 
 const EMPTY_FORM = {
   name: '',
@@ -84,20 +85,17 @@ export default function AdminSpaces() {
       .filter(Boolean)
 
     if (editingId) {
-      const updated = spaces.map((s) =>
-        s.id === editingId
-          ? {
-              ...s,
-              name: form.name.trim(),
-              type: form.type,
-              capacity: Number(form.capacity),
-              description: form.description.trim(),
-              amenities: amenitiesArr,
-              active: form.active,
-            }
-          : s
-      )
+      const updates = {
+        name: form.name.trim(),
+        type: form.type,
+        capacity: Number(form.capacity),
+        description: form.description.trim(),
+        amenities: amenitiesArr,
+        active: form.active,
+      }
+      const updated = spaces.map((s) => s.id === editingId ? { ...s, ...updates } : s)
       setSpaces(updated)
+      updateSpaceInApi(editingId, updates)
     } else {
       const newSpace = {
         id: `space-${Date.now()}`,
@@ -109,6 +107,7 @@ export default function AdminSpaces() {
         active: form.active,
       }
       setSpaces([...spaces, newSpace])
+      createSpaceInApi(newSpace)
     }
 
     closeForm()
@@ -117,10 +116,14 @@ export default function AdminSpaces() {
   const handleDelete = (id) => {
     setSpaces(spaces.filter((s) => s.id !== id))
     setDeleteConfirm(null)
+    deleteSpaceFromApi(id)
   }
 
   const handleToggleActive = (id) => {
-    setSpaces(spaces.map((s) => (s.id === id ? { ...s, active: !s.active } : s)))
+    const updated = spaces.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
+    setSpaces(updated)
+    const space = updated.find((s) => s.id === id)
+    if (space) updateSpaceInApi(id, { active: space.active })
   }
 
   return (

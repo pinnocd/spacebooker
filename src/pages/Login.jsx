@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, AlertCircle, Building2 } from 'lucide-react'
 import { authenticateMember } from '../utils/data'
+import { loginMemberViaApi } from '../utils/apiClient'
 import { useApp } from '../context/AppContext'
 
 export default function Login() {
@@ -18,31 +19,46 @@ export default function Login() {
     return null
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    setTimeout(() => {
+    try {
+      // Try API first; fall back to localStorage
+      const { data, error: apiError, status } = await loginMemberViaApi(email.trim(), password)
+
+      if (!apiError && data) {
+        loginMember(data)
+        navigate('/')
+        return
+      }
+
+      // API returned a meaningful auth error — show it, don't fall back
+      if (status === 401 || status === 403) {
+        setError(apiError || 'Incorrect email or password.')
+        return
+      }
+
+      // API unavailable — fall back to localStorage
       const user = authenticateMember(email.trim(), password)
       if (!user) {
         setError('Incorrect email or password.')
-        setLoading(false)
         return
       }
       if (user.status === 'pending') {
         setError('Your account is awaiting approval from an administrator.')
-        setLoading(false)
         return
       }
       if (user.status === 'suspended') {
         setError('Your account has been suspended. Please contact an administrator.')
-        setLoading(false)
         return
       }
       loginMember(user)
       navigate('/')
-    }, 400)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

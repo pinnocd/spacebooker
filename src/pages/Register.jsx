@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { UserPlus, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Building2 } from 'lucide-react'
-import { registerMember, getConfig } from '../utils/data'
+import { registerMember } from '../utils/data'
+import { registerMemberInApi } from '../utils/apiClient'
 import { useApp } from '../context/AppContext'
 
 export default function Register() {
-  const { loginMember } = useApp()
+  const { loginMember, config } = useApp()
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
   const [showPass, setShowPass] = useState(false)
@@ -15,7 +16,7 @@ export default function Register() {
 
   const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setError('') }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
@@ -25,26 +26,49 @@ export default function Register() {
     if (form.password !== form.confirm) return setError('Passwords do not match.')
 
     setLoading(true)
-    setTimeout(() => {
-      const result = registerMember({ name: form.name, email: form.email, password: form.password })
-      if (result.error) {
-        setError(result.error)
-        setLoading(false)
+    try {
+      const requireApproval = config?.requireApproval !== false
+
+      // Try API first
+      const { data, error: apiError, status } = await registerMemberInApi({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      })
+
+      if (!apiError && data) {
+        if (requireApproval) {
+          setSuccess(true)
+        } else {
+          loginMember({ ...data, status: 'active' })
+          navigate('/')
+        }
         return
       }
 
-      const cfg = getConfig()
-      if (cfg.requireApproval) {
-        // Account needs admin approval — show success but don't log in
+      // API conflict (duplicate email) — hard error
+      if (status === 409) {
+        setError(apiError || 'An account with that email already exists.')
+        return
+      }
+
+      // API unavailable — fall back to localStorage
+      const result = registerMember({ name: form.name, email: form.email, password: form.password })
+      if (result.error) {
+        setError(result.error)
+        return
+      }
+
+      if (requireApproval) {
         setSuccess(true)
       } else {
-        // Auto-activate and log in
         result.member.status = 'active'
         loginMember(result.member)
         navigate('/')
       }
+    } finally {
       setLoading(false)
-    }, 400)
+    }
   }
 
   if (success) {

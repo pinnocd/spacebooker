@@ -11,12 +11,7 @@ import {
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { useApp } from '../context/AppContext'
-import {
-  generateTimeSlots,
-  isSlotAvailable,
-  addBooking,
-  getBookingsForSpaceAndDate,
-} from '../utils/data'
+import { generateTimeSlots } from '../utils/data'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -27,7 +22,7 @@ function timeToMinutes(t) {
 
 export default function BookSpace() {
   const { spaceId } = useParams()
-  const { spaces, hours, refreshData } = useApp()
+  const { spaces, hours, bookings, addBooking } = useApp()
   const navigate = useNavigate()
 
   const space = spaces.find((s) => s.id === spaceId)
@@ -61,16 +56,18 @@ export default function BookSpace() {
 
   const existingBookings = useMemo(() => {
     if (!selectedDate) return []
-    return getBookingsForSpaceAndDate(spaceId, selectedDate)
-  }, [spaceId, selectedDate])
+    return bookings.filter((b) => b.spaceId === spaceId && b.date === selectedDate)
+  }, [bookings, spaceId, selectedDate])
 
-  // A start-time slot is unavailable if ALL 30-min blocks starting there are taken
+  const isSlotAvailable = (start, end) => {
+    const s = timeToMinutes(start), e = timeToMinutes(end)
+    return !existingBookings.some(b => s < timeToMinutes(b.endTime) && e > timeToMinutes(b.startTime))
+  }
+
+  // A start-time slot is unavailable if a 30-min booking from there conflicts
   const isStartTimeUnavailable = (slot) => {
-    const slotMins = timeToMinutes(slot)
-    const minEnd = slotMins + 30
-    // Check if a 30-min booking from this slot is available
-    const endSlotStr = minsToTime(minEnd)
-    return !isSlotAvailable(spaceId, selectedDate, slot, endSlotStr)
+    const minEnd = timeToMinutes(slot) + 30
+    return !isSlotAvailable(slot, minsToTime(minEnd))
   }
 
   const minsToTime = (mins) => {
@@ -97,7 +94,7 @@ export default function BookSpace() {
 
   const isEndTimeConflict = (end) => {
     if (!startTime || !end) return false
-    return !isSlotAvailable(spaceId, selectedDate, startTime, end)
+    return !isSlotAvailable(startTime, end)
   }
 
   const handleDateChange = (e) => {
@@ -135,15 +132,15 @@ export default function BookSpace() {
       return
     }
 
-    // Double-check availability
-    if (!isSlotAvailable(spaceId, selectedDate, startTime, endTime)) {
+    // Double-check local availability before submitting
+    if (!isSlotAvailable(startTime, endTime)) {
       setErrors({ submit: 'This time slot is no longer available. Please choose another.' })
       return
     }
 
     setSubmitting(true)
     try {
-      const booking = addBooking({
+      const { booking, error } = await addBooking({
         spaceId,
         spaceName: space.name,
         userName: userName.trim(),
@@ -153,7 +150,10 @@ export default function BookSpace() {
         endTime,
         notes: notes.trim(),
       })
-      refreshData()
+      if (error && !booking) {
+        setErrors({ submit: error })
+        return
+      }
       setSuccessBooking(booking)
     } catch (err) {
       setErrors({ submit: 'Something went wrong. Please try again.' })

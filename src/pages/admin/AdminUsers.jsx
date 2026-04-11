@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Plus, Edit, Trash2, X, Check, AlertCircle, Shield, User, Mail, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
-import { getAdminUsers, saveAdminUsers, getMembers, updateMemberStatus, saveMembers } from '../../utils/data'
+import {
+  fetchMembersFromApi, updateMemberStatusInApi, deleteMemberFromApi,
+  fetchAdminUsersFromApi, createAdminUserInApi, updateAdminUserInApi, deleteAdminUserFromApi,
+} from '../../utils/apiClient'
+import { getMembers, saveMembers, getAdminUsers, saveAdminUsers, updateMemberStatus } from '../../utils/data'
 
 const EMPTY_FORM = { username: '', password: '', name: '', role: 'admin' }
 
@@ -30,22 +34,45 @@ export default function AdminUsers() {
     if (currentUser && currentUser.role !== 'superadmin') navigate('/admin/dashboard', { replace: true })
   }, [currentUser, navigate])
 
-  const refresh = () => { setMembers(getMembers()); setAdminUsers(getAdminUsers()) }
-  useEffect(() => { refresh() }, [])
+  const refresh = async () => {
+    // Load from API, fall back to localStorage
+    const [membersRes, adminRes] = await Promise.all([fetchMembersFromApi(), fetchAdminUsersFromApi()])
+    if (!membersRes.error && Array.isArray(membersRes.data)) {
+      saveMembers(membersRes.data)
+      setMembers(membersRes.data)
+    } else {
+      setMembers(getMembers())
+    }
+    if (!adminRes.error && Array.isArray(adminRes.data)) {
+      saveAdminUsers(adminRes.data)
+      setAdminUsers(adminRes.data)
+    } else {
+      setAdminUsers(getAdminUsers())
+    }
+  }
+
+  useEffect(() => { refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const flash = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000) }
 
   // ── Members ──────────────────────────────────────────────────────────────
 
-  const handleMemberStatus = (id, status) => {
+  const handleMemberStatus = async (id, status) => {
+    // Optimistic update
     updateMemberStatus(id, status)
+    setMembers(getMembers())
+    const label = status === 'active' ? 'Member approved.' : status === 'suspended' ? 'Member suspended.' : 'Member updated.'
+    flash(label)
+    await updateMemberStatusInApi(id, status)
     refresh()
-    flash(status === 'active' ? 'Member approved.' : status === 'suspended' ? 'Member suspended.' : 'Member updated.')
   }
 
-  const handleDeleteMember = (id) => {
+  const handleDeleteMember = async (id) => {
     saveMembers(getMembers().filter((m) => m.id !== id))
-    refresh(); setDeleteConfirm(null); flash('Member deleted.')
+    setMembers(getMembers())
+    setDeleteConfirm(null)
+    flash('Member deleted.')
+    await deleteMemberFromApi(id)
   }
 
   const filteredMembers = memberFilter === 'all' ? members : members.filter((m) => m.status === memberFilter)
@@ -56,36 +83,56 @@ export default function AdminUsers() {
   const openEdit = (u) => { setEditId(u.id); setForm({ username: u.username, password: '', name: u.name, role: u.role }); setFormError(''); setShowForm(true) }
   const handleCancel = () => { setShowForm(false); setEditId(null); setForm(EMPTY_FORM); setFormError('') }
 
-  const handleAdminSubmit = (e) => {
+  const handleAdminSubmit = async (e) => {
     e.preventDefault(); setFormError('')
     if (!form.username.trim()) return setFormError('Username is required.')
     if (!form.name.trim()) return setFormError('Display name is required.')
     if (!/^[a-zA-Z0-9_]+$/.test(form.username.trim())) return setFormError('Username may only contain letters, numbers, and underscores.')
-    const all = getAdminUsers()
+
     if (editId) {
-      const idx = all.findIndex((u) => u.id === editId)
-      if (idx === -1) return setFormError('User not found.')
-      if (all.find((u) => u.username === form.username.trim() && u.id !== editId)) return setFormError('Username already taken.')
-      if (all[idx].role === 'superadmin' && form.role !== 'superadmin' && all.filter((u) => u.role === 'superadmin' && u.id !== editId).length === 0)
-        return setFormError('Cannot demote the last superadmin.')
-      all[idx] = { ...all[idx], username: form.username.trim(), name: form.name.trim(), role: form.role, ...(form.password ? { password: form.password } : {}) }
-      saveAdminUsers(all); refresh(); flash('Admin user updated.'); handleCancel()
+      const updates = { name: form.name.trim(), role: form.role }
+      if (form.password) {
+        if (form.password.length < 6) return setFormError('Password must be at least 6 characters.')
+        updates.password = form.password
+      }
+      const { error } = await updateAdminUserInApi(editId, updates)
+      if (error) {
+        // Fall back to localStorage
+        const all = getAdminUsers()
+        const idx = all.findIndex((u) => u.id === editId)
+        if (idx === -1) return setFormError('User not found.')
+        all[idx] = { ...all[idx], ...updates }
+        saveAdminUsers(all)
+      }
+      flash('Admin user updated.')
+      handleCancel()
+      refresh()
     } else {
       if (!form.password) return setFormError('Password is required.')
       if (form.password.length < 6) return setFormError('Password must be at least 6 characters.')
-      if (all.find((u) => u.username === form.username.trim())) return setFormError('Username already taken.')
-      all.push({ id: `user-${Date.now()}`, username: form.username.trim(), password: form.password, name: form.name.trim(), role: form.role, createdAt: new Date().toISOString() })
-      saveAdminUsers(all); refresh(); flash('Admin user created.'); handleCancel()
+      const { data, error } = await createAdminUserInApi({
+        username: form.username.trim(),
+        name: form.name.trim(),
+        password: form.password,
+        role: form.role,
+      })
+      if (error) {
+        if (error.includes('already')) return setFormError('Username already taken.')
+        return setFormError(error)
+      }
+      flash('Admin user created.')
+      handleCancel()
+      refresh()
     }
   }
 
-  const handleDeleteAdmin = (id) => {
+  const handleDeleteAdmin = async (id) => {
     if (currentUser?.id === id) return alert('You cannot delete your own account.')
-    const all = getAdminUsers()
-    const target = all.find((u) => u.id === id)
-    if (target?.role === 'superadmin' && all.filter((u) => u.role === 'superadmin').length <= 1)
-      return alert('Cannot delete the last superadmin.')
-    saveAdminUsers(all.filter((u) => u.id !== id)); refresh(); setDeleteConfirm(null); flash('Admin user deleted.')
+    const { error } = await deleteAdminUserFromApi(id)
+    if (error) return alert(error)
+    setDeleteConfirm(null)
+    flash('Admin user deleted.')
+    refresh()
   }
 
   const pendingCount = members.filter((m) => m.status === 'pending').length

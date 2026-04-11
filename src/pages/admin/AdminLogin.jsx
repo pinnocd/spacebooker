@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Lock, Eye, EyeOff, AlertCircle, Building2, User } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { authenticateAdmin } from '../../utils/data'
+import { loginAdminViaApi } from '../../utils/apiClient'
 
 export default function AdminLogin() {
   const { isAdmin, loginAdmin } = useApp()
@@ -19,21 +20,38 @@ export default function AdminLogin() {
     }
   }, [isAdmin, navigate])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    setTimeout(() => {
+    try {
+      // Try API first
+      const { data, error: apiError, status } = await loginAdminViaApi(username.trim(), password)
+
+      if (!apiError && data) {
+        loginAdmin(data)
+        navigate('/admin/dashboard', { replace: true })
+        return
+      }
+
+      // Definitive auth failure from API
+      if (status === 401) {
+        setError('Invalid username or password.')
+        return
+      }
+
+      // API unavailable — fall back to localStorage
       const user = authenticateAdmin(username.trim(), password)
       if (user) {
         loginAdmin(user)
         navigate('/admin/dashboard', { replace: true })
       } else {
         setError('Invalid username or password.')
-        setLoading(false)
       }
-    }, 400)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

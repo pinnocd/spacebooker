@@ -12,10 +12,9 @@ import {
 } from 'lucide-react'
 import { format, parseISO, isBefore, startOfDay } from 'date-fns'
 import { useApp } from '../context/AppContext'
-import { cancelBooking } from '../utils/data'
 
 export default function MyBookings() {
-  const { bookings, refreshData } = useApp()
+  const { bookings, cancelBooking } = useApp()
   const [emailInput, setEmailInput] = useState('')
   const [searchedEmail, setSearchedEmail] = useState('')
   const [cancelingId, setCancelingId] = useState(null)
@@ -52,7 +51,6 @@ export default function MyBookings() {
     if (!confirmCancel) return
     setCancelingId(confirmCancel.id)
     cancelBooking(confirmCancel.id)
-    refreshData()
     setConfirmCancel(null)
     setCancelingId(null)
   }

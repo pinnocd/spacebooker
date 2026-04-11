@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Clock, Check, Save, ToggleLeft, ToggleRight } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import { saveHoursToApi } from '../../utils/apiClient'
 
 const DAY_NAMES = [
   'Sunday',
@@ -64,6 +65,7 @@ export default function AdminHours() {
       }
     }
     setHours(localHours)
+    saveHoursToApi(localHours)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }

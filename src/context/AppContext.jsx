@@ -3,12 +3,21 @@ import {
   getSpaces, saveSpaces,
   getHours, saveHours,
   getBookings, saveBookings,
+  addBooking as localAddBooking,
+  cancelBooking as localCancelBooking,
   isAdminLoggedIn, setAdminLoggedIn,
   getCurrentAdminUser, setCurrentAdminUser,
   getMemberSession, setMemberSession,
   getConfig, saveConfig,
 } from '../utils/data'
-import { fetchConfigFromApi } from '../utils/apiClient'
+import {
+  fetchConfigFromApi,
+  fetchSpacesFromApi,
+  fetchHoursFromApi,
+  fetchBookingsFromApi,
+  createBookingInApi,
+  cancelBookingInApi,
+} from '../utils/apiClient'
 
 // Hex color helpers for generating shade variants at runtime
 function hexToRgb(hex) {
@@ -71,18 +80,43 @@ export function AppProvider({ children }) {
     // 1. Load synchronously from localStorage so UI is instant
     refreshData()
 
-    // 2. Attempt to hydrate branding config from the database in the background.
-    //    If it succeeds, merge into localStorage and apply — DB is the source of truth.
-    fetchConfigFromApi().then(({ data, error }) => {
-      if (error || !data || Object.keys(data).length === 0) return
-      const local = getConfig()
-      // DB values override local for branding keys; preserve dbUrl from local
-      const merged = { ...local, ...data, dbUrl: local.dbUrl }
-      saveConfig(merged)
-      setConfigState(merged)
-      applyBrandColors(merged)
+    // 2. Hydrate from DB in background — DB is shared source of truth
+    Promise.all([
+      fetchConfigFromApi(),
+      fetchSpacesFromApi(),
+      fetchHoursFromApi(),
+      fetchBookingsFromApi(),
+    ]).then(([configRes, spacesRes, hoursRes, bookingsRes]) => {
+      // Config
+      if (!configRes.error && configRes.data && Object.keys(configRes.data).length > 0) {
+        const local = getConfig()
+        const merged = { ...local, ...configRes.data, dbUrl: local.dbUrl }
+        saveConfig(merged)
+        setConfigState(merged)
+        applyBrandColors(merged)
+      }
+      // Spaces
+      if (!spacesRes.error && Array.isArray(spacesRes.data)) {
+        saveSpaces(spacesRes.data)
+        setSpacesState(spacesRes.data)
+      }
+      // Hours
+      if (!hoursRes.error && hoursRes.data && Object.keys(hoursRes.data).length > 0) {
+        // Normalise keys to numbers
+        const normalized = {}
+        for (let i = 0; i <= 6; i++) {
+          normalized[i] = hoursRes.data[i] || hoursRes.data[String(i)]
+        }
+        saveHours(normalized)
+        setHoursState(normalized)
+      }
+      // Bookings
+      if (!bookingsRes.error && Array.isArray(bookingsRes.data)) {
+        saveBookings(bookingsRes.data)
+        setBookingsState(bookingsRes.data)
+      }
     })
-  }, [refreshData, applyBrandColors])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const setSpaces = useCallback((v) => { saveSpaces(v); setSpacesState(v) }, [])
   const setHours = useCallback((v) => { saveHours(v); setHoursState(v) }, [])
@@ -116,6 +150,38 @@ export function AppProvider({ children }) {
     applyBrandColors(v)
   }, [applyBrandColors])
 
+  // Add a booking: optimistic localStorage update + API call
+  const addBooking = useCallback(async (bookingData) => {
+    // Write to localStorage immediately for instant UI feedback
+    const booking = localAddBooking(bookingData)
+    setBookingsState(getBookings())
+
+    // Persist to DB — if conflict, revert
+    const { data, error, status } = await createBookingInApi(booking)
+    if (error) {
+      if (status === 409) {
+        // Genuine conflict — revert optimistic update
+        localCancelBooking(booking.id)
+        setBookingsState(getBookings())
+        return { booking: null, error: 'This time slot is no longer available.' }
+      }
+      // Network/DB error — keep local booking, warn caller
+      return { booking, error }
+    }
+    // Replace with server-side booking (server is canonical)
+    const updated = getBookings().map(b => b.id === booking.id ? data : b)
+    saveBookings(updated)
+    setBookingsState(updated)
+    return { booking: data, error: null }
+  }, [])
+
+  // Cancel a booking: optimistic + API
+  const cancelBooking = useCallback(async (id) => {
+    localCancelBooking(id)
+    setBookingsState(getBookings())
+    await cancelBookingInApi(id)
+  }, [])
+
   return (
     <AppContext.Provider value={{
       spaces, setSpaces,
@@ -125,6 +191,7 @@ export function AppProvider({ children }) {
       currentUser, loginAdmin,
       member, loginMember, logoutMember,
       config, setConfig,
+      addBooking, cancelBooking,
       refreshData,
     }}>
       {children}
