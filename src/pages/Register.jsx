@@ -33,9 +33,13 @@ export default function Register() {
         password: form.password,
       })
 
-      // Duplicate email — hard error
+      // Hard errors — show to user
       if (status === 409) {
         setError(apiError || 'An account with that email already exists.')
+        return
+      }
+      if (status === 500) {
+        setError(apiError || 'Something went wrong. Please try again.')
         return
       }
 
@@ -45,7 +49,7 @@ export default function Register() {
         return
       }
 
-      // API unavailable — fall back to localStorage (no email verification possible)
+      // API unreachable — fall back to localStorage (no email verification possible)
       const result = registerMember({ name: form.name, email: form.email, password: form.password })
       if (result.error) { setError(result.error); return }
       result.member.status = 'active'

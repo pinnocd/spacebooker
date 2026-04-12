@@ -60,31 +60,38 @@ export default async function handler(req, res) {
 
       // Send confirmation email
       const confirmUrl = `${APP_URL}/verify-email?token=${token}`
-      try {
-        await resend.emails.send({
-          from: `${APP_NAME} <${FROM}>`,
-          to: email,
-          subject: `Confirm your ${APP_NAME} account`,
-          html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
-              <h2 style="margin:0 0 8px;font-size:22px;color:#111">Welcome to ${APP_NAME}</h2>
-              <p style="margin:0 0 24px;color:#555;font-size:15px">
-                Hi ${name.trim()}, click the button below to confirm your email address and activate your account.
-              </p>
-              <a href="${confirmUrl}"
-                 style="display:inline-block;background:#2563eb;color:#fff;font-weight:600;
-                        font-size:15px;padding:12px 28px;border-radius:8px;text-decoration:none;margin-bottom:24px">
-                Confirm my account
-              </a>
-              <p style="margin:0;color:#888;font-size:13px">
-                This link expires in 24 hours. If you didn't create an account you can ignore this email.
-              </p>
-            </div>
-          `,
-        })
-      } catch (emailErr) {
-        console.error('[members] confirmation email failed:', emailErr.message)
-        // Pending record is saved — user can request a resend later
+      if (!process.env.RESEND_API_KEY) {
+        console.error('[members] RESEND_API_KEY is not set — cannot send confirmation email')
+        return res.status(500).json({ error: 'Email service is not configured. Please contact the administrator.' })
+      }
+
+      const { error: emailErr } = await resend.emails.send({
+        from: `${APP_NAME} <${FROM}>`,
+        to: email,
+        subject: `Confirm your ${APP_NAME} account`,
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
+            <h2 style="margin:0 0 8px;font-size:22px;color:#111">Welcome to ${APP_NAME}</h2>
+            <p style="margin:0 0 24px;color:#555;font-size:15px">
+              Hi ${name.trim()}, click the button below to confirm your email address and activate your account.
+            </p>
+            <a href="${confirmUrl}"
+               style="display:inline-block;background:#2563eb;color:#fff;font-weight:600;
+                      font-size:15px;padding:12px 28px;border-radius:8px;text-decoration:none;margin-bottom:24px">
+              Confirm my account
+            </a>
+            <p style="margin:0;color:#888;font-size:13px">
+              This link expires in 24 hours. If you didn't create an account you can ignore this email.
+            </p>
+          </div>
+        `,
+      })
+
+      if (emailErr) {
+        console.error('[members] confirmation email failed:', emailErr)
+        // Clean up the pending record so the user can try again
+        await client.query(`DELETE FROM pending_verifications WHERE id = $1`, [token])
+        return res.status(500).json({ error: 'Failed to send confirmation email. Please try again.' })
       }
 
       return res.status(201).json({ pending: true })
