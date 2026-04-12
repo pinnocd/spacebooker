@@ -137,6 +137,16 @@ export async function deleteAdminUserFromApi(id) {
   return apiFetch(`/admin-users?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
+// ── Email verification ────────────────────────────────────────────────────
+
+export async function sendVerificationCode(email, name) {
+  return apiFetch('/verify', { method: 'POST', body: JSON.stringify({ email, name }) })
+}
+
+export async function confirmVerificationCode(email, code) {
+  return apiFetch('/verify/confirm', { method: 'POST', body: JSON.stringify({ email, code }) })
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────
 
 export async function loginMemberViaApi(email, password) {

@@ -12,6 +12,7 @@ import {
 import { format, parseISO } from 'date-fns'
 import { useApp } from '../context/AppContext'
 import { generateTimeSlots } from '../utils/data'
+import { sendVerificationCode, confirmVerificationCode } from '../utils/apiClient'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -37,6 +38,12 @@ export default function BookSpace() {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [successBooking, setSuccessBooking] = useState(null)
+  const [verifyStep, setVerifyStep] = useState(false)
+  const [verifyCode, setVerifyCode] = useState('')
+  const [verifyError, setVerifyError] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [verified, setVerified] = useState(false)
+  const [resending, setResending] = useState(false)
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
@@ -155,6 +162,10 @@ export default function BookSpace() {
         return
       }
       setSuccessBooking(booking)
+      // Send verification email — fire and forget, don't block on failure
+      sendVerificationCode(userEmail.trim().toLowerCase(), userName.trim()).then(({ error: emailErr }) => {
+        if (!emailErr) setVerifyStep(true)
+      })
     } catch (err) {
       setErrors({ submit: 'Something went wrong. Please try again.' })
     } finally {
@@ -190,6 +201,83 @@ export default function BookSpace() {
     )
   }
 
+  const handleVerify = async (e) => {
+    e.preventDefault()
+    setVerifyError('')
+    setVerifying(true)
+    const { error } = await confirmVerificationCode(successBooking.userEmail, verifyCode)
+    setVerifying(false)
+    if (error) { setVerifyError(error); return }
+    setVerified(true)
+    setVerifyStep(false)
+  }
+
+  const handleResend = async () => {
+    setResending(true)
+    setVerifyError('')
+    await sendVerificationCode(successBooking.userEmail, successBooking.userName)
+    setResending(false)
+  }
+
+  // Verification code entry screen
+  if (successBooking && verifyStep) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-12">
+        <div className="card p-8">
+          <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <Check className="w-7 h-7 text-blue-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Verify your email</h2>
+          <p className="text-sm text-gray-500 text-center mb-6">
+            We sent a 5-digit code to <strong>{successBooking.userEmail}</strong>
+          </p>
+          <form onSubmit={handleVerify} className="space-y-4">
+            <div>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={5}
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                placeholder="12345"
+                className="input text-center text-2xl font-mono tracking-widest"
+                autoFocus
+              />
+              {verifyError && (
+                <p className="mt-2 text-sm text-red-600 text-center">{verifyError}</p>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={verifyCode.length !== 5 || verifying}
+              className="btn-primary w-full justify-center"
+            >
+              {verifying ? (
+                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Verifying…</>
+              ) : 'Confirm code'}
+            </button>
+          </form>
+          <div className="mt-4 text-center space-y-2">
+            <button
+              onClick={handleResend}
+              disabled={resending}
+              className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+            >
+              {resending ? 'Sending…' : 'Resend code'}
+            </button>
+            <br />
+            <button
+              onClick={() => setVerifyStep(false)}
+              className="text-sm text-gray-400 hover:text-gray-600"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Success screen
   if (successBooking) {
     return (
@@ -199,6 +287,11 @@ export default function BookSpace() {
             <Check className="w-8 h-8 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
+          {verified && (
+            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2 mb-4 inline-block">
+              Email verified — your account has been created.
+            </p>
+          )}
           <p className="text-gray-500 mb-6">Your workspace has been successfully reserved.</p>
 
           <div className="bg-gray-50 rounded-xl p-5 text-left space-y-3 mb-6">

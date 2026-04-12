@@ -122,6 +122,17 @@ async function ensureSchema(client) {
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS pending_verifications (
+      id         TEXT PRIMARY KEY,
+      email      TEXT NOT NULL,
+      name       TEXT NOT NULL,
+      code       TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_verifications_email ON pending_verifications(email);
   `)
 }
 

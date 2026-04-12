@@ -221,6 +221,22 @@ export default function AdminDashboard() {
                 </Link>
               )}
 
+              <Link
+                to="/admin/bookings"
+                className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">Manage Bookings</p>
+                    <p className="text-xs text-gray-400">View and cancel bookings</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+              </Link>
+
               {currentUser?.role === 'superadmin' && (
                 <Link
                   to="/admin/config"
@@ -231,64 +247,16 @@ export default function AdminDashboard() {
                       <Database className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 text-sm">Configuration</p>
+                      <p className="font-medium text-gray-900 text-sm">Manage Configuration</p>
                       <p className="text-xs text-gray-400">Database &amp; app settings</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                 </Link>
               )}
-
-              <Link
-                to="/"
-                className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Users className="w-5 h-5 text-gray-500" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">View Spaces</p>
-                    <p className="text-xs text-gray-400">See the booking interface</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
-              </Link>
             </div>
           </div>
 
-          {/* Recent spaces */}
-          <div className="card">
-            <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">Space Summary</h2>
-            </div>
-            <div className="p-3 space-y-1">
-              {spaces.slice(0, 5).map((space) => (
-                <div
-                  key={space.id}
-                  className="flex items-center justify-between px-3 py-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                        space.active ? 'bg-green-500' : 'bg-gray-300'
-                      }`}
-                    />
-                    <span className="text-sm text-gray-700 truncate">{space.name}</span>
-                  </div>
-                  <span className="text-xs text-gray-400 capitalize">{space.type}</span>
-                </div>
-              ))}
-              {spaces.length > 5 && (
-                <Link
-                  to="/admin/spaces"
-                  className="block px-3 py-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  +{spaces.length - 5} more spaces →
-                </Link>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>

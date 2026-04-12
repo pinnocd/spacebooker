@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Settings, Database, Check, AlertCircle, ChevronDown, ChevronRight, Eye, EyeOff, ToggleLeft, ToggleRight, Palette, Upload, X, Image, Loader2, Wifi, WifiOff } from 'lucide-react'
+import { Settings, Database, Check, AlertCircle, Eye, EyeOff, ToggleLeft, ToggleRight, Palette, Upload, X, Image, Loader2, Wifi, WifiOff } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { getConfig, saveConfig } from '../../utils/data'
 import { saveConfigToApi, fetchConfigFromApi } from '../../utils/apiClient'
@@ -51,114 +51,6 @@ function ColorSwatch({ color, label, onChange }) {
   )
 }
 
-const SQL_SCHEMA = `-- ============================================================
--- SpaceBooker PostgreSQL Schema
--- Run this in psql or your database tool (e.g. pgAdmin, DBeaver)
--- ============================================================
-
--- Users (members who make bookings)
-CREATE TABLE IF NOT EXISTS members (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name        TEXT NOT NULL,
-  email       TEXT UNIQUE NOT NULL,
-  password    TEXT NOT NULL,          -- store bcrypt hash in production
-  status      TEXT NOT NULL DEFAULT 'pending',  -- pending | active | suspended
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Admin users
-CREATE TABLE IF NOT EXISTS admin_users (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username    TEXT UNIQUE NOT NULL,
-  password    TEXT NOT NULL,          -- store bcrypt hash in production
-  name        TEXT NOT NULL,
-  role        TEXT NOT NULL DEFAULT 'admin',  -- admin | superadmin
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Spaces (rooms and tables)
-CREATE TABLE IF NOT EXISTS spaces (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name        TEXT NOT NULL,
-  type        TEXT NOT NULL,          -- room | table
-  capacity    INTEGER NOT NULL DEFAULT 1,
-  description TEXT,
-  amenities   TEXT[] DEFAULT '{}',
-  active      BOOLEAN NOT NULL DEFAULT true,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Office open hours (one row per day of week)
-CREATE TABLE IF NOT EXISTS office_hours (
-  day_of_week INTEGER PRIMARY KEY,   -- 0=Sunday … 6=Saturday
-  open_time   TIME,
-  close_time  TIME,
-  closed      BOOLEAN NOT NULL DEFAULT false
-);
-
--- Pre-populate default hours
-INSERT INTO office_hours (day_of_week, open_time, close_time, closed) VALUES
-  (0, '09:00', '18:00', true),
-  (1, '08:00', '18:00', false),
-  (2, '08:00', '18:00', false),
-  (3, '08:00', '18:00', false),
-  (4, '08:00', '18:00', false),
-  (5, '08:00', '18:00', false),
-  (6, '09:00', '18:00', true)
-ON CONFLICT (day_of_week) DO NOTHING;
-
--- Bookings
-CREATE TABLE IF NOT EXISTS bookings (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  space_id    UUID NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
-  space_name  TEXT NOT NULL,
-  member_id   UUID REFERENCES members(id) ON DELETE SET NULL,
-  user_name   TEXT NOT NULL,
-  user_email  TEXT NOT NULL,
-  date        DATE NOT NULL,
-  start_time  TIME NOT NULL,
-  end_time    TIME NOT NULL,
-  notes       TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT no_overlap EXCLUDE USING gist (
-    space_id WITH =,
-    daterange(date, date, '[]') WITH &&,
-    timerange(start_time, end_time) WITH &&
-  )
-);
-
--- App config (key-value store)
-CREATE TABLE IF NOT EXISTS app_config (
-  key         TEXT PRIMARY KEY,
-  value       TEXT NOT NULL
-);
-
-INSERT INTO app_config (key, value) VALUES
-  ('require_approval', 'true')
-ON CONFLICT (key) DO NOTHING;
-
--- Useful indexes
-CREATE INDEX IF NOT EXISTS idx_bookings_space_date ON bookings(space_id, date);
-CREATE INDEX IF NOT EXISTS idx_bookings_member     ON bookings(member_id);
-CREATE INDEX IF NOT EXISTS idx_bookings_email      ON bookings(user_email);
-CREATE INDEX IF NOT EXISTS idx_members_email       ON members(email);`
-
-function Section({ title, children, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-      >
-        <span className="font-medium text-gray-900">{title}</span>
-        {open ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
-      </button>
-      {open && <div className="px-5 py-4 bg-white">{children}</div>}
-    </div>
-  )
-}
-
 // DB save status per attempt
 const DB_STATUS = { idle: 'idle', saving: 'saving', ok: 'ok', error: 'error', unavailable: 'unavailable' }
 
@@ -175,8 +67,6 @@ export default function AdminConfig() {
   const [showUrl, setShowUrl] = useState(false)
   const [requireApproval, setRequireApproval] = useState(true)
   const [logoError, setLogoError] = useState('')
-  const [copied, setCopied] = useState(false)
-
   // Save status
   const [localStatus, setLocalStatus] = useState(DB_STATUS.idle)   // localStorage
   const [dbStatus, setDbStatus] = useState(DB_STATUS.idle)         // database
@@ -252,12 +142,6 @@ export default function AdminConfig() {
     setSaving(false)
     // Reset local status indicator after a few seconds
     setTimeout(() => { setLocalStatus(DB_STATUS.idle); setDbStatus(DB_STATUS.idle) }, 5000)
-  }
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(SQL_SCHEMA)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -469,148 +353,6 @@ export default function AdminConfig() {
         </button>
       </form>
 
-      {/* ── PostgreSQL setup guide ────────────────────────────────────────── */}
-      <div className="space-y-3">
-        <h2 className="font-semibold text-gray-900 text-lg">PostgreSQL setup guide</h2>
-        <p className="text-sm text-gray-500">
-          The app currently uses browser localStorage. Follow these steps to migrate to a real PostgreSQL database.
-        </p>
-
-        <Section title="Step 1 — Create a PostgreSQL database" defaultOpen>
-          <div className="space-y-3 text-sm text-gray-700">
-            <p><strong>Option A — Neon (recommended, free tier):</strong></p>
-            <ol className="list-decimal pl-5 space-y-1.5">
-              <li>Go to <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">neon.tech</span> and create a free account.</li>
-              <li>Click <em>New project</em>, name it <strong>spacebooker</strong>.</li>
-              <li>Copy the connection string — it looks like:<br />
-                <code className="block mt-1 text-xs bg-gray-100 px-3 py-2 rounded font-mono break-all">
-                  postgresql://user:pass@ep-xyz.us-east-2.aws.neon.tech/spacebooker?sslmode=require
-                </code>
-              </li>
-            </ol>
-            <p className="mt-3"><strong>Option B — Supabase (also free):</strong></p>
-            <ol className="list-decimal pl-5 space-y-1.5">
-              <li>Go to <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">supabase.com</span> → New project.</li>
-              <li>Settings → Database → copy the <em>Connection string (URI)</em>.</li>
-            </ol>
-            <p className="mt-3"><strong>Option C — Local Docker:</strong></p>
-            <code className="block text-xs bg-gray-100 px-3 py-2 rounded font-mono">
-              docker run -d --name spacebooker-db \<br />
-              {'  '}-e POSTGRES_PASSWORD=secret \<br />
-              {'  '}-e POSTGRES_DB=spacebooker \<br />
-              {'  '}-p 5432:5432 postgres:16
-            </code>
-            <p className="text-xs text-gray-500 mt-1">Connection string: <code className="font-mono">postgresql://postgres:secret@localhost:5432/spacebooker</code></p>
-          </div>
-        </Section>
-
-        <Section title="Step 2 — Run the schema">
-          <div className="space-y-3 text-sm text-gray-700">
-            <p>Copy the SQL below and run it against your database using psql, pgAdmin, DBeaver, or the Neon/Supabase SQL editor.</p>
-            <div className="relative">
-              <pre className="text-xs bg-gray-900 text-green-300 rounded-lg p-4 overflow-x-auto max-h-72 leading-relaxed">
-                {SQL_SCHEMA}
-              </pre>
-              <button
-                onClick={handleCopy}
-                className={`absolute top-2 right-2 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${copied ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
-              >
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-800">
-                The <code className="font-mono">EXCLUDE USING gist</code> constraint on bookings requires the <strong>btree_gist</strong> extension.
-                Run <code className="font-mono">CREATE EXTENSION IF NOT EXISTS btree_gist;</code> first if your database doesn't have it.
-              </p>
-            </div>
-          </div>
-        </Section>
-
-        <Section title="Step 3 — Add a backend API">
-          <div className="space-y-3 text-sm text-gray-700">
-            <p>The React app needs a server-side API to talk to PostgreSQL safely (you never expose DB credentials to the browser). The easiest options:</p>
-
-            <p><strong>Option A — Vercel Serverless Functions (recommended)</strong></p>
-            <ol className="list-decimal pl-5 space-y-1.5">
-              <li>Create an <code className="font-mono text-xs bg-gray-100 px-1 rounded">api/</code> folder in the repo root.</li>
-              <li>Add route files e.g. <code className="font-mono text-xs bg-gray-100 px-1 rounded">api/bookings.js</code>.</li>
-              <li>Install: <code className="font-mono text-xs bg-gray-100 px-1 rounded">npm install @vercel/postgres</code></li>
-              <li>In Vercel dashboard → Environment Variables, add <code className="font-mono text-xs bg-gray-100 px-1 rounded">POSTGRES_URL</code> with your connection string.</li>
-              <li>Example endpoint:</li>
-            </ol>
-            <pre className="text-xs bg-gray-900 text-green-300 rounded-lg p-4 overflow-x-auto leading-relaxed">{`// api/bookings.js
-import { sql } from '@vercel/postgres'
-
-export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    const { rows } = await sql\`SELECT * FROM bookings ORDER BY date, start_time\`
-    return res.json(rows)
-  }
-  if (req.method === 'POST') {
-    const { space_id, space_name, user_name, user_email, date, start_time, end_time, notes } = req.body
-    const { rows } = await sql\`
-      INSERT INTO bookings (space_id, space_name, user_name, user_email, date, start_time, end_time, notes)
-      VALUES (\${space_id}, \${space_name}, \${user_name}, \${user_email}, \${date}, \${start_time}, \${end_time}, \${notes})
-      RETURNING *\`
-    return res.status(201).json(rows[0])
-  }
-}`}</pre>
-
-            <p className="mt-2"><strong>Option B — Express server (self-hosted)</strong></p>
-            <code className="block text-xs bg-gray-100 px-3 py-2 rounded font-mono">
-              npm install express pg cors dotenv
-            </code>
-            <p className="text-xs text-gray-500">Create a separate <code className="font-mono">server/</code> directory with an Express app, connect with the <code className="font-mono">pg</code> package using your connection string as <code className="font-mono">DATABASE_URL</code> in a <code className="font-mono">.env</code> file.</p>
-          </div>
-        </Section>
-
-        <Section title="Step 4 — Replace localStorage with API calls">
-          <div className="space-y-3 text-sm text-gray-700">
-            <p>Once your API is running, replace the functions in <code className="font-mono text-xs bg-gray-100 px-1 rounded">src/utils/data.js</code> with <code className="font-mono">fetch()</code> calls:</p>
-            <pre className="text-xs bg-gray-900 text-green-300 rounded-lg p-4 overflow-x-auto leading-relaxed">{`// Example replacement for getBookings()
-export async function getBookings() {
-  const res = await fetch('/api/bookings')
-  if (!res.ok) throw new Error('Failed to fetch bookings')
-  return res.json()
-}
-
-// Example replacement for addBooking()
-export async function addBooking(data) {
-  const res = await fetch('/api/bookings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) throw new Error('Failed to create booking')
-  return res.json()
-}`}</pre>
-            <p>Update <code className="font-mono text-xs bg-gray-100 px-1 rounded">AppContext.jsx</code> to handle async data loading (add <code className="font-mono">useEffect</code> with <code className="font-mono">await</code> calls and loading/error state).</p>
-          </div>
-        </Section>
-
-        <Section title="Step 5 — Environment variables on Vercel">
-          <div className="space-y-2 text-sm text-gray-700">
-            <p>In your Vercel project → <strong>Settings → Environment Variables</strong>, add:</p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">Variable</th>
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">Value</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  <tr><td className="px-3 py-2 font-mono">POSTGRES_URL</td><td className="px-3 py-2 text-gray-500">Your connection string</td></tr>
-                  <tr><td className="px-3 py-2 font-mono">NODE_ENV</td><td className="px-3 py-2 text-gray-500">production</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">Never commit the connection string to Git. Always use environment variables.</p>
-          </div>
-        </Section>
-      </div>
     </div>
   )
 }
