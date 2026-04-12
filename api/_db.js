@@ -6,12 +6,29 @@ let _pool = null
 
 export function getPool() {
   if (_pool) return _pool
-  if (!process.env.POSTGRES_URL) return null
-  _pool = new Pool({
-    connectionString: process.env.POSTGRES_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    max: 5,
-  })
+
+  const isProduction = process.env.NODE_ENV === 'production'
+
+  if (process.env.POSTGRES_URL) {
+    _pool = new Pool({
+      connectionString: process.env.POSTGRES_URL,
+      ssl: isProduction ? { rejectUnauthorized: false } : false,
+      max: 5,
+    })
+  } else if (process.env.PGHOST && process.env.PGUSER && process.env.PGPASSWORD) {
+    _pool = new Pool({
+      host: process.env.PGHOST,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      database: process.env.PGDATABASE || 'neondb',
+      port: Number(process.env.PGPORT) || 5432,
+      ssl: { rejectUnauthorized: false }, // Neon always requires SSL
+      max: 5,
+    })
+  } else {
+    return null
+  }
+
   return _pool
 }
 
