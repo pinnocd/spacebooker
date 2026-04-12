@@ -1,11 +1,7 @@
 // api/auth/member.js
 // POST /api/auth/member — authenticate a member (email + password)
 import { withDb } from '../_db.js'
-import { createHash } from 'crypto'
-
-function hashPassword(password) {
-  return createHash('sha256').update(password).digest('hex')
-}
+import bcrypt from 'bcryptjs'
 
 export default async function handler(req, res) {
   await withDb(req, res, async (client) => {
@@ -19,11 +15,11 @@ export default async function handler(req, res) {
     }
 
     const { rows } = await client.query(
-      `SELECT id, name, email, status FROM members WHERE email = $1 AND password = $2`,
-      [email.trim().toLowerCase(), hashPassword(password)]
+      `SELECT id, name, email, status, password FROM members WHERE email = $1`,
+      [email.trim().toLowerCase()]
     )
 
-    if (rows.length === 0) {
+    if (rows.length === 0 || !(await bcrypt.compare(password, rows[0].password))) {
       return res.status(401).json({ error: 'Invalid email or password.' })
     }
 

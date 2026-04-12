@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, Users, MapPin, Calendar, ChevronDown } from 'lucide-react'
+import { Building2, Users, MapPin, Calendar, ChevronDown, Lock } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { format } from 'date-fns'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export default function Home() {
-  const { spaces, hours, bookings, config } = useApp()
+  const { spaces, hours, bookings, config, member } = useApp()
   const logo = config?.logo || ''
   const [typeFilter, setTypeFilter] = useState('all')
   const [capacityFilter, setCapacityFilter] = useState('all')
@@ -204,13 +204,23 @@ export default function Home() {
 
                 {/* Card footer */}
                 <div className="px-5 pb-5">
-                  <Link
-                    to={`/book/${space.id}`}
-                    className="btn-primary w-full text-sm"
-                  >
-                    <Calendar className="w-4 h-4" />
-                    Book Now
-                  </Link>
+                  {member ? (
+                    <Link
+                      to={`/book/${space.id}`}
+                      className="btn-primary w-full text-sm"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      Book Now
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="btn-secondary w-full text-sm justify-center"
+                    >
+                      <Lock className="w-4 h-4" />
+                      Sign in to book
+                    </Link>
+                  )}
                 </div>
               </div>
             )

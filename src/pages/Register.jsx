@@ -27,45 +27,30 @@ export default function Register() {
 
     setLoading(true)
     try {
-      const requireApproval = config?.requireApproval !== false
-
-      // Try API first
       const { data, error: apiError, status } = await registerMemberInApi({
         name: form.name,
         email: form.email,
         password: form.password,
       })
 
-      if (!apiError && data) {
-        if (requireApproval) {
-          setSuccess(true)
-        } else {
-          loginMember({ ...data, status: 'active' })
-          navigate('/')
-        }
-        return
-      }
-
-      // API conflict (duplicate email) — hard error
+      // Duplicate email — hard error
       if (status === 409) {
         setError(apiError || 'An account with that email already exists.')
         return
       }
 
-      // API unavailable — fall back to localStorage
-      const result = registerMember({ name: form.name, email: form.email, password: form.password })
-      if (result.error) {
-        setError(result.error)
+      if (!apiError) {
+        // API accepted — show "check your email"
+        setSuccess(true)
         return
       }
 
-      if (requireApproval) {
-        setSuccess(true)
-      } else {
-        result.member.status = 'active'
-        loginMember(result.member)
-        navigate('/')
-      }
+      // API unavailable — fall back to localStorage (no email verification possible)
+      const result = registerMember({ name: form.name, email: form.email, password: form.password })
+      if (result.error) { setError(result.error); return }
+      result.member.status = 'active'
+      loginMember(result.member)
+      navigate('/')
     } finally {
       setLoading(false)
     }
@@ -78,10 +63,10 @@ export default function Register() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-2xl mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Account requested</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h1>
           <p className="text-gray-500 text-sm mb-6">
-            Your account has been created and is awaiting approval from an administrator.
-            You'll be able to sign in once it's approved.
+            We've sent a confirmation link to <strong>{form.email}</strong>.
+            Click the link to activate your account.
           </p>
           <Link to="/" className="btn-primary inline-flex">Back to home</Link>
         </div>

@@ -124,15 +124,28 @@ async function ensureSchema(client) {
     );
 
     CREATE TABLE IF NOT EXISTS pending_verifications (
-      id         TEXT PRIMARY KEY,
-      email      TEXT NOT NULL,
-      name       TEXT NOT NULL,
-      code       TEXT NOT NULL,
-      expires_at TIMESTAMPTZ NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      id            TEXT PRIMARY KEY,
+      email         TEXT NOT NULL,
+      name          TEXT NOT NULL,
+      code          TEXT,
+      password_hash TEXT,
+      type          TEXT NOT NULL DEFAULT 'booking',
+      expires_at    TIMESTAMPTZ NOT NULL,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
     CREATE INDEX IF NOT EXISTS idx_verifications_email ON pending_verifications(email);
+
+    -- Migrate existing table if columns missing
+    ALTER TABLE pending_verifications ALTER COLUMN code DROP NOT NULL;
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pending_verifications' AND column_name='password_hash') THEN
+        ALTER TABLE pending_verifications ADD COLUMN password_hash TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pending_verifications' AND column_name='type') THEN
+        ALTER TABLE pending_verifications ADD COLUMN type TEXT NOT NULL DEFAULT 'booking';
+      END IF;
+    END $$;
   `)
 }
 

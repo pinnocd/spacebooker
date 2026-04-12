@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate, Navigate } from 'react-router-dom'
 import {
   ArrowLeft,
   Users,
@@ -23,7 +23,7 @@ function timeToMinutes(t) {
 
 export default function BookSpace() {
   const { spaceId } = useParams()
-  const { spaces, hours, bookings, addBooking } = useApp()
+  const { spaces, hours, bookings, addBooking, member } = useApp()
   const navigate = useNavigate()
 
   const space = spaces.find((s) => s.id === spaceId)
@@ -32,8 +32,8 @@ export default function BookSpace() {
   const [selectedDate, setSelectedDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
-  const [userName, setUserName] = useState('')
-  const [userEmail, setUserEmail] = useState('')
+  const [userName, setUserName] = useState(member?.name || '')
+  const [userEmail, setUserEmail] = useState(member?.email || '')
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -171,6 +171,10 @@ export default function BookSpace() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (!member) {
+    return <Navigate to="/login" replace />
   }
 
   if (!space) {
@@ -558,8 +562,9 @@ export default function BookSpace() {
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   placeholder="Jane Smith"
-                  className="input"
+                  className={`input ${member ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}`}
                   autoComplete="name"
+                  readOnly={!!member}
                 />
                 {errors.userName && (
                   <p className="mt-1.5 text-sm text-red-600">{errors.userName}</p>
@@ -576,9 +581,13 @@ export default function BookSpace() {
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
                   placeholder="jane@company.com"
-                  className="input"
+                  className={`input ${member ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}`}
                   autoComplete="email"
+                  readOnly={!!member}
                 />
+                {member && (
+                  <p className="mt-1 text-xs text-gray-400">Signed in as {member.name}</p>
+                )}
                 {errors.userEmail && (
                   <p className="mt-1.5 text-sm text-red-600">{errors.userEmail}</p>
                 )}

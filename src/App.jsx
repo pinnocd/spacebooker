@@ -17,6 +17,7 @@ import AdminHours from './pages/admin/AdminHours'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminConfig from './pages/admin/AdminConfig'
 import AdminBookings from './pages/admin/AdminBookings'
+import VerifyEmail from './pages/VerifyEmail'
 
 function AppShell() {
   const { config } = useApp()
@@ -39,6 +40,7 @@ function AppShell() {
               <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
               <Route path="/admin/config" element={<ProtectedRoute><AdminConfig /></ProtectedRoute>} />
               <Route path="/admin/bookings" element={<ProtectedRoute><AdminBookings /></ProtectedRoute>} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
             </Routes>
           </main>
 
