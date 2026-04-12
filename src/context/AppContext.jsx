@@ -17,6 +17,8 @@ import {
   fetchBookingsFromApi,
   createBookingInApi,
   cancelBookingInApi,
+  createSpaceInApi,
+  saveHoursToApi,
 } from '../utils/apiClient'
 
 // Hex color helpers for generating shade variants at runtime
@@ -80,7 +82,8 @@ export function AppProvider({ children }) {
     // 1. Load synchronously from localStorage so UI is instant
     refreshData()
 
-    // 2. Hydrate from DB in background — DB is shared source of truth
+    // 2. Hydrate from DB in background — DB is shared source of truth.
+    //    If DB is empty but localStorage has data, migrate localStorage → DB.
     Promise.all([
       fetchConfigFromApi(),
       fetchSpacesFromApi(),
@@ -95,23 +98,40 @@ export function AppProvider({ children }) {
         setConfigState(merged)
         applyBrandColors(merged)
       }
-      // Spaces
-      if (!spacesRes.error && Array.isArray(spacesRes.data)) {
-        saveSpaces(spacesRes.data)
-        setSpacesState(spacesRes.data)
-      }
-      // Hours
-      if (!hoursRes.error && hoursRes.data && Object.keys(hoursRes.data).length > 0) {
-        // Normalise keys to numbers
-        const normalized = {}
-        for (let i = 0; i <= 6; i++) {
-          normalized[i] = hoursRes.data[i] || hoursRes.data[String(i)]
+
+      // Spaces — if DB has data use it; if empty, migrate localStorage → DB
+      if (!spacesRes.error) {
+        if (Array.isArray(spacesRes.data) && spacesRes.data.length > 0) {
+          saveSpaces(spacesRes.data)
+          setSpacesState(spacesRes.data)
+        } else if (spacesRes.data !== null) {
+          // DB is empty — push localStorage spaces up
+          const local = getSpaces()
+          if (local.length > 0) {
+            local.forEach(s => createSpaceInApi(s))
+          }
         }
-        saveHours(normalized)
-        setHoursState(normalized)
       }
-      // Bookings
-      if (!bookingsRes.error && Array.isArray(bookingsRes.data)) {
+
+      // Hours — if DB has data use it; if empty, migrate localStorage → DB
+      if (!hoursRes.error && hoursRes.data) {
+        const keys = Object.keys(hoursRes.data)
+        if (keys.length > 0) {
+          const normalized = {}
+          for (let i = 0; i <= 6; i++) {
+            normalized[i] = hoursRes.data[i] || hoursRes.data[String(i)]
+          }
+          saveHours(normalized)
+          setHoursState(normalized)
+        } else {
+          // DB hours table is empty — push localStorage hours up
+          const local = getHours()
+          saveHoursToApi(local)
+        }
+      }
+
+      // Bookings — if DB has data use it; never wipe with empty
+      if (!bookingsRes.error && Array.isArray(bookingsRes.data) && bookingsRes.data.length > 0) {
         saveBookings(bookingsRes.data)
         setBookingsState(bookingsRes.data)
       }

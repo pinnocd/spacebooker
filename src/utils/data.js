@@ -32,7 +32,7 @@ export function registerMember({ name, email, password }) {
     return { error: 'An account with that email already exists.' }
   }
   const member = {
-    id: `member-${Date.now()}`,
+    id: crypto.randomUUID(),
     name: name.trim(),
     email: email.trim().toLowerCase(),
     password,

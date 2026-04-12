@@ -98,7 +98,7 @@ export default function AdminSpaces() {
       updateSpaceInApi(editingId, updates)
     } else {
       const newSpace = {
-        id: `space-${Date.now()}`,
+        id: crypto.randomUUID(),
         name: form.name.trim(),
         type: form.type,
         capacity: Number(form.capacity),
