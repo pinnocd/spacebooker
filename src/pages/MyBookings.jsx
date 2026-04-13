@@ -14,9 +14,10 @@ import { format, parseISO, isBefore, startOfDay } from 'date-fns'
 import { useApp } from '../context/AppContext'
 
 export default function MyBookings() {
-  const { bookings, cancelBooking } = useApp()
-  const [emailInput, setEmailInput] = useState('')
-  const [searchedEmail, setSearchedEmail] = useState('')
+  const { bookings, cancelBooking, member } = useApp()
+  const defaultEmail = member?.email || ''
+  const [emailInput, setEmailInput] = useState(defaultEmail)
+  const [searchedEmail, setSearchedEmail] = useState(defaultEmail)
   const [cancelingId, setCancelingId] = useState(null)
   const [confirmCancel, setConfirmCancel] = useState(null)
 
