@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
     // ── POST — register ────────────────────────────────────────────────────
     if (req.method === 'POST') {
-      const { name, email, password } = req.body || {}
+      const { name, email, password, phone } = req.body || {}
       if (!name || !email || !password) {
         return res.status(400).json({ error: 'name, email and password are required' })
       }
@@ -51,9 +51,9 @@ export default async function handler(req, res) {
         [normalEmail]
       )
       await client.query(
-        `INSERT INTO pending_verifications (id, email, name, password_hash, type, expires_at)
-         VALUES ($1, $2, $3, $4, 'registration', $5)`,
-        [token, normalEmail, name.trim(), hash, expiresAt]
+        `INSERT INTO pending_verifications (id, email, name, password_hash, phone, type, expires_at)
+         VALUES ($1, $2, $3, $4, $5, 'registration', $6)`,
+        [token, normalEmail, name.trim(), hash, phone || null, expiresAt]
       )
 
       // Send confirmation email

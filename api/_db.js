@@ -145,6 +145,12 @@ async function ensureSchema(client) {
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pending_verifications' AND column_name='type') THEN
         ALTER TABLE pending_verifications ADD COLUMN type TEXT NOT NULL DEFAULT 'booking';
       END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pending_verifications' AND column_name='phone') THEN
+        ALTER TABLE pending_verifications ADD COLUMN phone TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='phone') THEN
+        ALTER TABLE members ADD COLUMN phone TEXT;
+      END IF;
     END $$;
   `)
 }
