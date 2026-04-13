@@ -152,6 +152,8 @@ async function ensureSchema(client) {
         ALTER TABLE members ADD COLUMN phone TEXT;
       END IF;
     END $$;
+    -- Remove deprecated config key
+    DELETE FROM app_config WHERE key = 'requireApproval';
   `)
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Settings, Database, Check, AlertCircle, Eye, EyeOff, ToggleLeft, ToggleRight, Palette, Upload, X, Image, Loader2, Wifi, WifiOff } from 'lucide-react'
+import { Settings, Database, Check, AlertCircle, Eye, EyeOff, Palette, Upload, X, Image, Loader2, Wifi, WifiOff } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { getConfig, saveConfig } from '../../utils/data'
 import { saveConfigToApi, fetchConfigFromApi } from '../../utils/apiClient'
@@ -65,7 +65,6 @@ export default function AdminConfig() {
   const [secondaryColor, setSecondaryColor] = useState('#7c3aed')
   const [dbUrl, setDbUrl] = useState('')
   const [showUrl, setShowUrl] = useState(false)
-  const [requireApproval, setRequireApproval] = useState(true)
   const [logoError, setLogoError] = useState('')
   // Save status
   const [localStatus, setLocalStatus] = useState(DB_STATUS.idle)   // localStorage
@@ -80,8 +79,6 @@ export default function AdminConfig() {
     setPrimaryColor(cfg.primaryColor || '#2563eb')
     setSecondaryColor(cfg.secondaryColor || '#7c3aed')
     setDbUrl(cfg.dbUrl || '')
-    setRequireApproval(cfg.requireApproval !== false)
-
     // Check if DB is reachable and load any newer values from it
     fetchConfigFromApi().then(({ data, error }) => {
       if (!error && data && Object.keys(data).length > 0) {
@@ -89,7 +86,6 @@ export default function AdminConfig() {
         if (data.logo !== undefined) setLogo(data.logo)
         if (data.primaryColor)   setPrimaryColor(data.primaryColor)
         if (data.secondaryColor) setSecondaryColor(data.secondaryColor)
-        if (data.requireApproval !== undefined) setRequireApproval(data.requireApproval)
         setDbStatus(DB_STATUS.idle) // DB is reachable
       }
     })
@@ -119,7 +115,6 @@ export default function AdminConfig() {
       primaryColor,
       secondaryColor,
       dbUrl: dbUrl.trim(),
-      requireApproval,
     }
 
     // 1. Always save to localStorage first (instant, never fails)
@@ -246,30 +241,6 @@ export default function AdminConfig() {
                 <span className="text-sm font-medium" style={{ color: primaryColor }}>Active link</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* ── General settings ─────────────────────────────────────────────── */}
-        <div className="card p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Settings className="w-4 h-4 text-gray-500" />General settings
-          </h2>
-
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Require admin approval for new accounts</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                When on, new registrations are held as <em>pending</em> until an admin approves them.
-                When off, accounts activate immediately.
-              </p>
-            </div>
-            <button type="button" onClick={() => setRequireApproval(!requireApproval)}
-              className="flex-shrink-0 mt-0.5" aria-label="Toggle approval requirement">
-              {requireApproval
-                ? <ToggleRight className="w-8 h-8" style={{ color: 'var(--color-primary)' }} />
-                : <ToggleLeft className="w-8 h-8 text-gray-300" />
-              }
-            </button>
           </div>
         </div>
 

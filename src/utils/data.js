@@ -81,7 +81,6 @@ export function updateMemberStatus(id, status) {
 
 const DEFAULT_CONFIG = {
   dbUrl: '',
-  requireApproval: true,
   appName: 'Trinity Hub',
   logo: '/trinity-logo.svg',
   primaryColor: '#231F20',
