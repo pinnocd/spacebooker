@@ -98,10 +98,10 @@ export async function fetchMembersFromApi() {
   return apiFetch('/members')
 }
 
-export async function registerMemberInApi({ name, email, password }) {
+export async function registerMemberInApi({ name, email, password, phone }) {
   return apiFetch('/members', {
     method: 'POST',
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password, phone }),
   })
 }
 
@@ -139,8 +139,8 @@ export async function deleteAdminUserFromApi(id) {
 
 // ── Email verification ────────────────────────────────────────────────────
 
-export async function sendVerificationCode(email, name) {
-  return apiFetch('/verify', { method: 'POST', body: JSON.stringify({ email, name }) })
+export async function sendVerificationCode(email, name, phone) {
+  return apiFetch('/verify', { method: 'POST', body: JSON.stringify({ email, name, phone: phone || null }) })
 }
 
 export async function confirmVerificationCode(email, code) {

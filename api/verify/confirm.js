@@ -32,10 +32,10 @@ export default async function handler(req, res) {
       // Create the member (idempotent — ignore if email already exists)
       const newId = crypto.randomUUID()
       await client.query(
-        `INSERT INTO members (id, name, email, password, status)
-         VALUES ($1, $2, $3, $4, 'active')
+        `INSERT INTO members (id, name, email, phone, password, status)
+         VALUES ($1, $2, $3, $4, $5, 'active')
          ON CONFLICT (email) DO NOTHING`,
-        [newId, record.name, record.email, record.password_hash]
+        [newId, record.name, record.email, record.phone || null, record.password_hash]
       )
 
       await client.query(`DELETE FROM pending_verifications WHERE id = $1`, [record.id])
@@ -71,10 +71,10 @@ export default async function handler(req, res) {
 
       // Add to members if not already there (no password — booking-only account)
       await client.query(
-        `INSERT INTO members (id, name, email, password, status)
-         VALUES ($1, $2, $3, '', 'active')
+        `INSERT INTO members (id, name, email, phone, password, status)
+         VALUES ($1, $2, $3, $4, '', 'active')
          ON CONFLICT (email) DO NOTHING`,
-        [crypto.randomUUID(), record.name, record.email]
+        [crypto.randomUUID(), record.name, record.email, record.phone || null]
       )
 
       await client.query(`DELETE FROM pending_verifications WHERE id = $1`, [record.id])

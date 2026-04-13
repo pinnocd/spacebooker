@@ -162,9 +162,9 @@ export default function BookSpace() {
         return
       }
       setSuccessBooking(booking)
-      // Send verification email — fire and forget, don't block on failure
-      sendVerificationCode(userEmail.trim().toLowerCase(), userName.trim()).then(({ error: emailErr }) => {
-        if (!emailErr) setVerifyStep(true)
+      // Send verification code (SMS if member has phone, else email) — fire and forget
+      sendVerificationCode(userEmail.trim().toLowerCase(), userName.trim(), member?.phone).then(({ error: codeErr }) => {
+        if (!codeErr) setVerifyStep(true)
       })
     } catch (err) {
       setErrors({ submit: 'Something went wrong. Please try again.' })
@@ -219,7 +219,7 @@ export default function BookSpace() {
   const handleResend = async () => {
     setResending(true)
     setVerifyError('')
-    await sendVerificationCode(successBooking.userEmail, successBooking.userName)
+    await sendVerificationCode(successBooking.userEmail, successBooking.userName, member?.phone)
     setResending(false)
   }
 
@@ -231,9 +231,10 @@ export default function BookSpace() {
           <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-5">
             <Check className="w-7 h-7 text-blue-600" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Verify your email</h2>
+          <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Verify your booking</h2>
           <p className="text-sm text-gray-500 text-center mb-6">
-            We sent a 5-digit code to <strong>{successBooking.userEmail}</strong>
+            We sent a 5-digit code to{' '}
+            <strong>{member?.phone || successBooking.userEmail}</strong>
           </p>
           <form onSubmit={handleVerify} className="space-y-4">
             <div>

@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     // ── GET ────────────────────────────────────────────────────────────────
     if (req.method === 'GET') {
       const { rows } = await client.query(
-        `SELECT id, name, email, status, created_at FROM members ORDER BY created_at DESC`
+        `SELECT id, name, email, phone, status, created_at FROM members ORDER BY created_at DESC`
       )
       return res.status(200).json(rows.map(normalise))
     }
@@ -108,5 +108,5 @@ export default async function handler(req, res) {
 }
 
 function normalise(row) {
-  return { id: row.id, name: row.name, email: row.email, status: row.status, createdAt: row.created_at }
+  return { id: row.id, name: row.name, email: row.email, phone: row.phone || null, status: row.status, createdAt: row.created_at }
 }

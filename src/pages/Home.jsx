@@ -46,34 +46,34 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
       {/* Hero */}
-      <div className="rounded-2xl px-6 py-12 mb-10 text-white text-center" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)' }}>
-        <div className="flex justify-center mb-5">
+      <div className="rounded-2xl px-4 py-4 sm:px-6 sm:py-12 mb-5 sm:mb-10 text-white text-center" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)' }}>
+        <div className="flex justify-center mb-2 sm:mb-5">
           {logo
-            ? <img src={logo} alt="Logo" className="h-24 w-auto object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
-            : <Building2 className="w-12 h-12 opacity-80" />
+            ? <img src={logo} alt="Logo" className="h-10 sm:h-24 w-auto object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
+            : <Building2 className="w-6 h-6 sm:w-12 sm:h-12 opacity-80" />
           }
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-3">Book a space to use at the Trinity Hub</h1>
-        <p className="text-white/80 text-lg max-w-xl mx-auto">
+        <h1 className="text-base sm:text-3xl sm:text-4xl font-bold mb-1 sm:mb-3">Book a space to use at the Trinity Hub</h1>
+        <p className="hidden sm:block text-white/80 text-lg max-w-xl mx-auto">
           Reserve rooms, desks and the Main Hall — quickly and easily.
         </p>
         {isTodayClosed ? (
-          <div className="mt-5 inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-4 py-2 text-sm font-medium">
-            <span className="w-2 h-2 rounded-full bg-gray-300" />
+          <div className="mt-2 sm:mt-5 inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium">
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-gray-300" />
             Office closed today ({DAY_NAMES[todayDayNum]})
           </div>
         ) : (
-          <div className="mt-5 inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-4 py-2 text-sm font-medium">
-            <span className="w-2 h-2 rounded-full bg-green-400" />
+          <div className="mt-2 sm:mt-5 inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium">
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400" />
             Open today {todayHours.open} – {todayHours.close}
           </div>
         )}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="flex gap-2">
           {[
             { val: 'all', label: 'All Spaces' },
@@ -129,13 +129,13 @@ export default function Home() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {filteredSpaces.map((space) => {
             const available = hasAvailabilityToday(space)
             return (
               <div key={space.id} className="card hover:shadow-md transition-shadow duration-200 flex flex-col">
                 {/* Card header */}
-                <div className="p-5 flex-1">
+                <div className="p-3 sm:p-5 flex-1">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -203,7 +203,7 @@ export default function Home() {
                 </div>
 
                 {/* Card footer */}
-                <div className="px-5 pb-5">
+                <div className="px-3 pb-3 sm:px-5 sm:pb-5">
                   {member ? (
                     <Link
                       to={`/book/${space.id}`}

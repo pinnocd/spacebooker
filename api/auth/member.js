@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     }
 
     const { rows } = await client.query(
-      `SELECT id, name, email, status, password FROM members WHERE email = $1`,
+      `SELECT id, name, email, phone, status, password FROM members WHERE email = $1`,
       [email.trim().toLowerCase()]
     )
 
@@ -35,6 +35,7 @@ export default async function handler(req, res) {
       id: member.id,
       name: member.name,
       email: member.email,
+      phone: member.phone || null,
       status: member.status,
     })
   })

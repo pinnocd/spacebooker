@@ -1,14 +1,14 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { UserPlus, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Building2 } from 'lucide-react'
+import { UserPlus, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Building2, Phone } from 'lucide-react'
 import { registerMember } from '../utils/data'
 import { registerMemberInApi } from '../utils/apiClient'
 import { useApp } from '../context/AppContext'
 
 export default function Register() {
-  const { loginMember, config } = useApp()
+  const { loginMember } = useApp()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' })
   const [showPass, setShowPass] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -27,10 +27,11 @@ export default function Register() {
 
     setLoading(true)
     try {
-      const { data, error: apiError, status } = await registerMemberInApi({
+      const { error: apiError, status } = await registerMemberInApi({
         name: form.name,
         email: form.email,
         password: form.password,
+        phone: form.phone.trim() || null,
       })
 
       // Hard errors — show to user
@@ -106,6 +107,17 @@ export default function Register() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input id="reg-email" type="email" value={form.email} onChange={set('email')}
                   placeholder="jane@company.com" className="input pl-10" autoComplete="email" required />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="label" htmlFor="reg-phone">
+                Mobile number <span className="text-gray-400 font-normal">(optional — for SMS verification codes)</span>
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input id="reg-phone" type="tel" value={form.phone} onChange={set('phone')}
+                  placeholder="+447911123456" className="input pl-10" autoComplete="tel" />
               </div>
             </div>
 
