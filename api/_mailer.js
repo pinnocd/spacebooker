@@ -12,31 +12,49 @@ export async function sendEmail({ to, subject, html }) {
   const sender  = `${appName} <${from}>`
 
   // ── Brevo ─────────────────────────────────────────────────────────────
+  // xkeysib-... → HTTP API (Brevo → SMTP & API → API Keys tab)
+  // xsmtpsib-... → SMTP    (Brevo → SMTP & API → SMTP tab)
   if (process.env.BREVO_API_KEY) {
-    try {
-      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'api-key': process.env.BREVO_API_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sender: { name: appName, email: from },
-          to: [{ email: to }],
-          subject,
-          htmlContent: html,
-        }),
-      })
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}))
-        const msg = body.message || `HTTP ${response.status}`
-        console.error('[mailer] Brevo failed:', msg)
-        return { error: msg }
+    const key = process.env.BREVO_API_KEY
+    if (key.startsWith('xkeysib-')) {
+      // HTTP API
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'api-key': key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender: { name: appName, email: from },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+          }),
+        })
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}))
+          const msg = body.message || `HTTP ${response.status}`
+          console.error('[mailer] Brevo API failed:', msg)
+          return { error: msg }
+        }
+        return { error: null }
+      } catch (err) {
+        console.error('[mailer] Brevo API failed:', err.message)
+        return { error: err.message }
       }
-      return { error: null }
-    } catch (err) {
-      console.error('[mailer] Brevo failed:', err.message)
-      return { error: err.message }
+    } else {
+      // SMTP
+      try {
+        const transport = nodemailer.createTransport({
+          host: 'smtp-relay.brevo.com',
+          port: Number(process.env.BREVO_PORT) || 587,
+          secure: Number(process.env.BREVO_PORT) === 465,
+          auth: { user: process.env.BREVO_USER || from, pass: key },
+        })
+        await transport.sendMail({ from: sender, to, subject, html })
+        return { error: null }
+      } catch (err) {
+        console.error('[mailer] Brevo SMTP failed:', err.message)
+        return { error: err.message }
+      }
     }
   }
 
