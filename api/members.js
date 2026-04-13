@@ -5,12 +5,10 @@
 // DELETE /api/members?id=  — delete member
 import { withDb, setCors } from './_db.js'
 import bcrypt from 'bcryptjs'
-import { Resend } from 'resend'
+import { sendEmail } from './_mailer.js'
 
-const resend   = new Resend(process.env.RESEND_API_KEY)
-const FROM     = process.env.FROM_EMAIL || 'noreply@spacebooker.app'
-const APP_NAME = process.env.APP_NAME   || 'SpaceBooker'
-const APP_URL  = process.env.APP_URL    || 'https://spacebooker.vercel.app'
+const APP_NAME = process.env.APP_NAME || 'SpaceBooker'
+const APP_URL  = process.env.APP_URL  || 'https://spacebooker.vercel.app'
 
 export default async function handler(req, res) {
   setCors(res)
@@ -60,13 +58,7 @@ export default async function handler(req, res) {
 
       // Send confirmation email
       const confirmUrl = `${APP_URL}/verify-email?token=${token}`
-      if (!process.env.RESEND_API_KEY) {
-        console.error('[members] RESEND_API_KEY is not set — cannot send confirmation email')
-        return res.status(500).json({ error: 'Email service is not configured. Please contact the administrator.' })
-      }
-
-      const { error: emailErr } = await resend.emails.send({
-        from: `${APP_NAME} <${FROM}>`,
+      const { error: emailErr } = await sendEmail({
         to: email,
         subject: `Confirm your ${APP_NAME} account`,
         html: `
@@ -88,9 +80,8 @@ export default async function handler(req, res) {
       })
 
       if (emailErr) {
-        console.error('[members] confirmation email failed:', JSON.stringify(emailErr))
         await client.query(`DELETE FROM pending_verifications WHERE id = $1`, [token])
-        return res.status(500).json({ error: `Failed to send confirmation email: ${emailErr.message || JSON.stringify(emailErr)}` })
+        return res.status(500).json({ error: `Failed to send confirmation email: ${emailErr}` })
       }
 
       return res.status(201).json({ pending: true })
