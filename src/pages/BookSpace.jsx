@@ -423,8 +423,11 @@ export default function BookSpace() {
               value={selectedDate}
               onChange={handleDateChange}
               min={todayStr}
-              className="input"
+              className={`input cursor-pointer ${!selectedDate ? 'text-gray-400' : ''}`}
             />
+            {!selectedDate && (
+              <p className="mt-1.5 text-xs text-gray-400">Tap to select a date</p>
+            )}
             {errors.date && <p className="mt-1.5 text-sm text-red-600">{errors.date}</p>}
           </div>
 
