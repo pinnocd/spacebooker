@@ -88,10 +88,9 @@ export default async function handler(req, res) {
       })
 
       if (emailErr) {
-        console.error('[members] confirmation email failed:', emailErr)
-        // Clean up the pending record so the user can try again
+        console.error('[members] confirmation email failed:', JSON.stringify(emailErr))
         await client.query(`DELETE FROM pending_verifications WHERE id = $1`, [token])
-        return res.status(500).json({ error: 'Failed to send confirmation email. Please try again.' })
+        return res.status(500).json({ error: `Failed to send confirmation email: ${emailErr.message || JSON.stringify(emailErr)}` })
       }
 
       return res.status(201).json({ pending: true })
