@@ -10,7 +10,7 @@ import {
   CheckCircle,
   User,
 } from 'lucide-react'
-import { format, parseISO, isBefore, startOfDay } from 'date-fns'
+import { format, parseISO, isBefore } from 'date-fns'
 import { useApp } from '../context/AppContext'
 
 export default function MyBookings() {
@@ -18,9 +18,11 @@ export default function MyBookings() {
   const [tab, setTab] = useState('upcoming')
   const [confirmCancel, setConfirmCancel] = useState(null)
 
-  const today = startOfDay(new Date())
-
-  const isUpcoming = (booking) => !isBefore(startOfDay(parseISO(booking.date)), today)
+  const isUpcoming = (booking) => {
+    // Combine date + endTime into a full datetime and compare against now
+    const endDateTime = parseISO(`${booking.date}T${booking.endTime}`)
+    return !isBefore(endDateTime, new Date())
+  }
 
   const { upcoming, past } = useMemo(() => {
     if (!member) return { upcoming: [], past: [] }
