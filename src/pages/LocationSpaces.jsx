@@ -74,9 +74,14 @@ export default function LocationSpaces() {
               <h1 className="text-2xl font-bold text-gray-900 mb-0.5">{location.name}</h1>
               {location.tagline && <p className="text-sm text-gray-500 italic mb-1">{location.tagline}</p>}
               {location.address && (
-                <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-500 flex items-center gap-1.5 hover:text-blue-600 transition-colors w-fit"
+                >
                   <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />{location.address}
-                </p>
+                </a>
               )}
               {location.description && <p className="text-sm text-gray-600 mt-2">{location.description}</p>}
               <div className="flex items-center gap-2 mt-3">
