@@ -60,8 +60,8 @@ export default function LocationSpaces() {
 
       {/* Location header */}
       <div className="card overflow-hidden mb-6">
-        {/* Image carousel */}
-        {images.length > 0 && (
+        {/* Header banner — photo carousel, or logo banner, or gradient placeholder */}
+        {images.length > 0 ? (
           <div className="relative h-48 sm:h-64 bg-gray-100">
             <img src={images[imgIndex]} alt={location.name} className="w-full h-full object-cover" />
             {images.length > 1 && (
@@ -83,24 +83,22 @@ export default function LocationSpaces() {
               </>
             )}
           </div>
-        )}
+        ) : location.logo ? (
+          <div className="h-48 sm:h-64 flex items-center justify-center p-8"
+            style={{ background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #f8fafc 100%)' }}>
+            <img src={location.logo} alt={`${location.name} logo`} className="max-h-full max-w-full object-contain" style={{ maxHeight: '160px' }} />
+          </div>
+        ) : null}
 
         <div className="p-5">
-          <div className="flex items-start gap-4 mb-2">
-            {location.logo && (
-              <div className="w-16 h-16 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-center flex-shrink-0 overflow-hidden p-1.5">
-                <img src={location.logo} alt={`${location.name} logo`} className="w-full h-full object-contain" />
-              </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 mb-0.5">{location.name}</h1>
+            {location.tagline && <p className="text-sm text-gray-500 italic mb-1">{location.tagline}</p>}
+            {location.address && (
+              <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />{location.address}
+              </p>
             )}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 mb-0.5">{location.name}</h1>
-              {location.tagline && <p className="text-sm text-gray-500 italic mb-1">{location.tagline}</p>}
-              {location.address && (
-                <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />{location.address}
-                </p>
-              )}
-            </div>
           </div>
           {location.description && <p className="text-sm text-gray-600 mt-2">{location.description}</p>}
 
