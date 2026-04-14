@@ -15,6 +15,7 @@ import {
   fetchSpacesFromApi,
   fetchHoursFromApi,
   fetchBookingsFromApi,
+  fetchLocationsFromApi,
   createBookingInApi,
   cancelBookingInApi,
   createSpaceInApi,
@@ -47,6 +48,7 @@ export function AppProvider({ children }) {
   const [spaces, setSpacesState] = useState([])
   const [hours, setHoursState] = useState({})
   const [bookings, setBookingsState] = useState([])
+  const [locations, setLocationsState] = useState([])
   const [isAdmin, setIsAdminState] = useState(false)
   const [currentUser, setCurrentUserState] = useState(null)   // admin user
   const [member, setMemberState] = useState(null)             // logged-in member
@@ -89,7 +91,8 @@ export function AppProvider({ children }) {
       fetchSpacesFromApi(),
       fetchHoursFromApi(),
       fetchBookingsFromApi(),
-    ]).then(([configRes, spacesRes, hoursRes, bookingsRes]) => {
+      fetchLocationsFromApi(),
+    ]).then(([configRes, spacesRes, hoursRes, bookingsRes, locationsRes]) => {
       // Config
       if (!configRes.error && configRes.data && Object.keys(configRes.data).length > 0) {
         const local = getConfig()
@@ -135,10 +138,16 @@ export function AppProvider({ children }) {
         saveBookings(bookingsRes.data)
         setBookingsState(bookingsRes.data)
       }
+
+      // Locations — always use DB as source of truth
+      if (!locationsRes.error && Array.isArray(locationsRes.data)) {
+        setLocationsState(locationsRes.data)
+      }
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const setSpaces = useCallback((v) => { saveSpaces(v); setSpacesState(v) }, [])
+  const setLocations = useCallback((v) => setLocationsState(v), [])
   const setHours = useCallback((v) => { saveHours(v); setHoursState(v) }, [])
   const setBookings = useCallback((v) => { saveBookings(v); setBookingsState(v) }, [])
 
@@ -207,6 +216,7 @@ export function AppProvider({ children }) {
       spaces, setSpaces,
       hours, setHours,
       bookings, setBookings,
+      locations, setLocations,
       isAdmin, setIsAdmin,
       currentUser, loginAdmin,
       member, loginMember, logoutMember,

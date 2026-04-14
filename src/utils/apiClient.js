@@ -137,6 +137,37 @@ export async function deleteAdminUserFromApi(id) {
   return apiFetch(`/admin-users?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
+// ── Locations ─────────────────────────────────────────────────────────────
+
+export async function fetchLocationsFromApi() {
+  return apiFetch('/locations')
+}
+
+export async function createLocationInApi(location) {
+  return apiFetch('/locations', { method: 'POST', body: JSON.stringify(location) })
+}
+
+export async function updateLocationInApi(id, updates) {
+  return apiFetch(`/locations?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  })
+}
+
+export async function deleteLocationFromApi(id) {
+  return apiFetch(`/locations?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+// ── Floor map ─────────────────────────────────────────────────────────────
+
+export async function fetchMapFromApi() {
+  return apiFetch('/map')
+}
+
+export async function saveMapToApi(mapData) {
+  return apiFetch('/map', { method: 'POST', body: JSON.stringify(mapData) })
+}
+
 // ── Email verification ────────────────────────────────────────────────────
 
 export async function sendVerificationCode(email, name, phone) {

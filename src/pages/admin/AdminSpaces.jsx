@@ -11,8 +11,11 @@ import {
   AlertCircle,
   ToggleLeft,
   ToggleRight,
+  Upload,
+  Image,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+
 import { createSpaceInApi, updateSpaceInApi, deleteSpaceFromApi } from '../../utils/apiClient'
 
 const EMPTY_FORM = {
@@ -21,11 +24,16 @@ const EMPTY_FORM = {
   capacity: 1,
   description: '',
   amenities: '',
+  locationId: '',
+  images: [],
   active: true,
 }
 
+const MAX_IMAGES = 4
+const MAX_IMG_SIZE = 500 * 1024 // 500 KB
+
 export default function AdminSpaces() {
-  const { spaces, setSpaces } = useApp()
+  const { spaces, setSpaces, locations } = useApp()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -51,6 +59,8 @@ export default function AdminSpaces() {
       capacity: space.capacity,
       description: space.description || '',
       amenities: (space.amenities || []).join(', '),
+      locationId: space.locationId || '',
+      images: space.images || [],
       active: space.active,
     })
     setEditingId(space.id)
@@ -91,6 +101,8 @@ export default function AdminSpaces() {
         capacity: Number(form.capacity),
         description: form.description.trim(),
         amenities: amenitiesArr,
+        images: form.images,
+        location_id: form.locationId || null,
         active: form.active,
       }
       const updated = spaces.map((s) => s.id === editingId ? { ...s, ...updates } : s)
@@ -104,6 +116,9 @@ export default function AdminSpaces() {
         capacity: Number(form.capacity),
         description: form.description.trim(),
         amenities: amenitiesArr,
+        images: form.images,
+        location_id: form.locationId || null,
+        locationId: form.locationId || null,
         active: form.active,
       }
       setSpaces([...spaces, newSpace])
@@ -246,6 +261,17 @@ export default function AdminSpaces() {
               />
               <p className="mt-1 text-xs text-gray-400">Comma-separated list</p>
             </div>
+
+            <div className="sm:col-span-2">
+              <label className="label">Location</label>
+              <select value={form.locationId} onChange={e => setForm({ ...form, locationId: e.target.value })}
+                className="input bg-white">
+                <option value="">— No location —</option>
+                {locations.filter(l => l.active).map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="mb-4">
@@ -257,6 +283,48 @@ export default function AdminSpaces() {
               rows={2}
               className="input bg-white resize-none"
             />
+          </div>
+
+          {/* Photos */}
+          <div className="mb-4">
+            <label className="label flex items-center gap-1.5">
+              <Image className="w-3.5 h-3.5 text-gray-400" />
+              Photos <span className="text-gray-400 font-normal">(up to {MAX_IMAGES}, 500 KB each)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {(form.images || []).map((src, i) => (
+                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                  <img src={src} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, images: f.images.filter((_, j) => j !== i) }))}
+                    className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              {(form.images || []).length < MAX_IMAGES && (
+                <label className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center cursor-pointer transition-colors flex-shrink-0">
+                  <Upload className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs text-gray-400 mt-1">Add</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > MAX_IMG_SIZE) return alert('Image must be under 500 KB')
+                      const reader = new FileReader()
+                      reader.onload = (ev) => setForm(f => ({ ...f, images: [...(f.images || []), ev.target.result] }))
+                      reader.readAsDataURL(file)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-3 mb-5">

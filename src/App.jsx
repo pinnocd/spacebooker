@@ -17,6 +17,10 @@ import AdminHours from './pages/admin/AdminHours'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminConfig from './pages/admin/AdminConfig'
 import AdminBookings from './pages/admin/AdminBookings'
+import AdminMap from './pages/admin/AdminMap'
+import AdminLocations from './pages/admin/AdminLocations'
+import SpaceMap from './pages/SpaceMap'
+import LocationSpaces from './pages/LocationSpaces'
 import VerifyEmail from './pages/VerifyEmail'
 
 function AppShell() {
@@ -40,6 +44,10 @@ function AppShell() {
               <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
               <Route path="/admin/config" element={<ProtectedRoute><AdminConfig /></ProtectedRoute>} />
               <Route path="/admin/bookings" element={<ProtectedRoute><AdminBookings /></ProtectedRoute>} />
+              <Route path="/admin/map" element={<ProtectedRoute><AdminMap /></ProtectedRoute>} />
+              <Route path="/admin/locations" element={<ProtectedRoute><AdminLocations /></ProtectedRoute>} />
+              <Route path="/map" element={<SpaceMap />} />
+              <Route path="/location/:locationId" element={<LocationSpaces />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
             </Routes>
           </main>

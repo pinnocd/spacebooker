@@ -61,9 +61,33 @@ export async function withDb(req, res, handler) {
   }
 }
 
+let schemaReady = false
+
 /** Creates all tables if they don't already exist. Idempotent. */
 async function ensureSchema(client) {
+  if (schemaReady) return
+  await client.query(`SELECT pg_advisory_lock(1357924680)`)
+  try {
+    if (schemaReady) return
+    await _runSchemaDdl(client)
+    schemaReady = true
+  } finally {
+    await client.query(`SELECT pg_advisory_unlock(1357924680)`)
+  }
+}
+
+async function _runSchemaDdl(client) {
   await client.query(`
+    CREATE TABLE IF NOT EXISTS locations (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      address     TEXT DEFAULT '',
+      images      TEXT[] DEFAULT '{}',
+      active      BOOLEAN NOT NULL DEFAULT true,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
     CREATE TABLE IF NOT EXISTS spaces (
       id          TEXT PRIMARY KEY,
       name        TEXT NOT NULL,
@@ -151,11 +175,18 @@ async function ensureSchema(client) {
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='phone') THEN
         ALTER TABLE members ADD COLUMN phone TEXT;
       END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='spaces' AND column_name='images') THEN
+        ALTER TABLE spaces ADD COLUMN images TEXT[] DEFAULT '{}';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='spaces' AND column_name='location_id') THEN
+        ALTER TABLE spaces ADD COLUMN location_id TEXT;
+      END IF;
     END $$;
     -- Remove deprecated config key
     DELETE FROM app_config WHERE key = 'requireApproval';
   `)
 }
+
 
 /** Check if a booking overlaps with existing ones for the same space+date. */
 export async function hasOverlap(client, spaceId, date, startTime, endTime, excludeId = null) {

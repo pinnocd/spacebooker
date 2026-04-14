@@ -30,9 +30,11 @@ import memberAuthHandler  from './api/auth/member.js'
 import adminAuthHandler   from './api/auth/admin.js'
 import verifyHandler      from './api/verify.js'
 import verifyConfirmHandler from './api/verify/confirm.js'
+import mapHandler           from './api/map.js'
+import locationsHandler     from './api/locations.js'
 
 const app = express()
-app.use(express.json({ limit: '2mb' }))
+app.use(express.json({ limit: '8mb' }))
 
 // Adapt Vercel-style handlers (req, res) to Express
 function route(handler) {
@@ -49,6 +51,8 @@ app.all('/api/auth/member',      route(memberAuthHandler))
 app.all('/api/auth/admin',       route(adminAuthHandler))
 app.all('/api/verify/confirm',   route(verifyConfirmHandler))
 app.all('/api/verify',           route(verifyHandler))
+app.all('/api/map',              route(mapHandler))
+app.all('/api/locations',        route(locationsHandler))
 
 const PORT = process.env.API_PORT || 3001
 app.listen(PORT, () => console.log(`API server running on http://localhost:${PORT}`))
