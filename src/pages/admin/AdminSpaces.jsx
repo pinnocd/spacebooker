@@ -377,6 +377,9 @@ export default function AdminSpaces() {
                     Capacity
                   </th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Location
+                  </th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Amenities
                   </th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -410,6 +413,12 @@ export default function AdminSpaces() {
                       </span>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-600">{space.capacity}</td>
+                    <td className="px-4 py-4 text-sm text-gray-600">
+                      {space.locationId
+                        ? locations.find(l => l.id === space.locationId)?.name ?? <span className="text-gray-300">—</span>
+                        : <span className="text-gray-300">—</span>
+                      }
+                    </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-1">
                         {(space.amenities || []).slice(0, 3).map((a) => (
@@ -488,6 +497,11 @@ export default function AdminSpaces() {
                       </span>
                     </div>
                     <p className="text-xs text-gray-400">Capacity: {space.capacity}</p>
+                    {space.locationId && (
+                      <p className="text-xs text-gray-400">
+                        {locations.find(l => l.id === space.locationId)?.name}
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={() => handleToggleActive(space.id)}

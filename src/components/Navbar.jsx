@@ -9,7 +9,7 @@ export default function Navbar() {
   const navigate = useNavigate()
 
   const close = () => setMobileOpen(false)
-  const appName = config?.appName || 'OfficeBook'
+  const appName = config?.appName || 'SpaceBooker'
   const logo = config?.logo || ''
 
   const handleLogout = () => { logoutMember(); close(); navigate('/') }

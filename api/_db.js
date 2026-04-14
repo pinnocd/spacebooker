@@ -61,16 +61,19 @@ export async function withDb(req, res, handler) {
   }
 }
 
-let schemaReady = false
+// Increment this whenever new migrations are added so already-running
+// servers re-run the DDL block on next request without needing a restart.
+const SCHEMA_VERSION = 4
+let schemaVersion = 0
 
 /** Creates all tables if they don't already exist. Idempotent. */
 async function ensureSchema(client) {
-  if (schemaReady) return
+  if (schemaVersion >= SCHEMA_VERSION) return
   await client.query(`SELECT pg_advisory_lock(1357924680)`)
   try {
-    if (schemaReady) return
+    if (schemaVersion >= SCHEMA_VERSION) return
     await _runSchemaDdl(client)
-    schemaReady = true
+    schemaVersion = SCHEMA_VERSION
   } finally {
     await client.query(`SELECT pg_advisory_unlock(1357924680)`)
   }
@@ -180,6 +183,15 @@ async function _runSchemaDdl(client) {
       END IF;
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='spaces' AND column_name='location_id') THEN
         ALTER TABLE spaces ADD COLUMN location_id TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='locations' AND column_name='tagline') THEN
+        ALTER TABLE locations ADD COLUMN tagline TEXT DEFAULT '';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='locations' AND column_name='logo') THEN
+        ALTER TABLE locations ADD COLUMN logo TEXT DEFAULT '';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='locations' AND column_name='floor_map') THEN
+        ALTER TABLE locations ADD COLUMN floor_map TEXT DEFAULT NULL;
       END IF;
     END $$;
     -- Remove deprecated config key

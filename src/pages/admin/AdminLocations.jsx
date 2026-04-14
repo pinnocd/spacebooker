@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Edit, Trash2, X, Check,
   MapPin, AlertCircle, ToggleLeft, ToggleRight,
-  Upload, Image,
+  Upload, Image, Map,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import {
@@ -12,7 +12,7 @@ import {
   deleteLocationFromApi,
 } from '../../utils/apiClient'
 
-const EMPTY_FORM = { name: '', description: '', address: '', images: [], active: true }
+const EMPTY_FORM = { name: '', description: '', address: '', tagline: '', logo: '', images: [], active: true }
 const MAX_IMAGES = 4
 const MAX_IMG_SIZE = 500 * 1024
 
@@ -23,11 +23,12 @@ export default function AdminLocations() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const logoInputRef = useRef(null)
 
   const openAdd = () => { setForm(EMPTY_FORM); setEditingId(null); setErrors({}); setShowForm(true) }
 
   const openEdit = (loc) => {
-    setForm({ name: loc.name, description: loc.description, address: loc.address, images: loc.images || [], active: loc.active })
+    setForm({ name: loc.name, description: loc.description, address: loc.address, tagline: loc.tagline || '', logo: loc.logo || '', images: loc.images || [], active: loc.active })
     setEditingId(loc.id)
     setErrors({})
     setShowForm(true)
@@ -39,11 +40,11 @@ export default function AdminLocations() {
     if (!form.name.trim()) { setErrors({ name: 'Name is required' }); return }
 
     if (editingId) {
-      const updates = { name: form.name.trim(), description: form.description.trim(), address: form.address.trim(), images: form.images, active: form.active }
+      const updates = { name: form.name.trim(), description: form.description.trim(), address: form.address.trim(), tagline: form.tagline.trim(), logo: form.logo, images: form.images, active: form.active }
       setLocations(locations.map(l => l.id === editingId ? { ...l, ...updates } : l))
       updateLocationInApi(editingId, updates)
     } else {
-      const loc = { id: crypto.randomUUID(), name: form.name.trim(), description: form.description.trim(), address: form.address.trim(), images: form.images, active: form.active }
+      const loc = { id: crypto.randomUUID(), name: form.name.trim(), description: form.description.trim(), address: form.address.trim(), tagline: form.tagline.trim(), logo: form.logo, images: form.images, active: form.active }
       setLocations([...locations, loc])
       createLocationInApi(loc)
     }
@@ -68,6 +69,14 @@ export default function AdminLocations() {
     if (file.size > MAX_IMG_SIZE) return alert('Image must be under 500 KB')
     const reader = new FileReader()
     reader.onload = (ev) => setForm(f => ({ ...f, images: [...(f.images || []), ev.target.result] }))
+    reader.readAsDataURL(file)
+  }
+
+  const addLogo = (file) => {
+    if (!file) return
+    if (file.size > MAX_IMG_SIZE) return alert('Logo must be under 500 KB')
+    const reader = new FileReader()
+    reader.onload = (ev) => setForm(f => ({ ...f, logo: ev.target.result }))
     reader.readAsDataURL(file)
   }
 
@@ -116,6 +125,44 @@ export default function AdminLocations() {
             <label className="label">Description</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Brief description of this location…" rows={2} className="input bg-white resize-none" />
+          </div>
+
+          <div className="mb-4">
+            <label className="label">Tagline</label>
+            <input type="text" value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))}
+              placeholder="e.g. Modern co-working space in the heart of the city"
+              className="input bg-white" />
+            <p className="mt-1 text-xs text-gray-400">Short subtitle shown on the location page header.</p>
+          </div>
+
+          {/* Logo */}
+          <div className="mb-4">
+            <label className="label flex items-center gap-1.5">
+              <Image className="w-3.5 h-3.5 text-gray-400" />Logo
+              <span className="text-gray-400 font-normal">(PNG, JPG or SVG — max 500 KB)</span>
+            </label>
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-16 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 flex-shrink-0 overflow-hidden">
+                {form.logo
+                  ? <img src={form.logo} alt="Logo preview" className="w-full h-full object-contain p-1" />
+                  : <Image className="w-6 h-6 text-gray-300" />
+                }
+              </div>
+              <div className="flex flex-col gap-2">
+                <button type="button" onClick={() => logoInputRef.current?.click()}
+                  className="btn-secondary text-sm">
+                  <Upload className="w-4 h-4" />Upload logo
+                </button>
+                {form.logo && (
+                  <button type="button" onClick={() => setForm(f => ({ ...f, logo: '' }))}
+                    className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 transition-colors">
+                    <X className="w-3.5 h-3.5" />Remove
+                  </button>
+                )}
+              </div>
+              <input ref={logoInputRef} type="file" accept="image/*" className="hidden"
+                onChange={e => { addLogo(e.target.files?.[0]); e.target.value = '' }} />
+            </div>
           </div>
 
           {/* Images */}
@@ -175,8 +222,12 @@ export default function AdminLocations() {
           {locations.map(loc => (
             <div key={loc.id} className="card p-4">
               <div className="flex items-start gap-4">
-                {/* Thumbnail */}
-                {loc.images && loc.images.length > 0 ? (
+                {/* Thumbnail — prefer logo, fall back to first photo */}
+                {loc.logo ? (
+                  <div className="w-16 h-14 rounded-lg border border-gray-100 flex-shrink-0 flex items-center justify-center bg-gray-50 overflow-hidden p-1">
+                    <img src={loc.logo} alt={`${loc.name} logo`} className="w-full h-full object-contain" />
+                  </div>
+                ) : loc.images && loc.images.length > 0 ? (
                   <img src={loc.images[0]} alt={loc.name}
                     className="w-16 h-14 object-cover rounded-lg flex-shrink-0 border border-gray-100" />
                 ) : (
@@ -196,6 +247,7 @@ export default function AdminLocations() {
                     )}
                   </div>
                   {loc.address && <p className="text-xs text-gray-500 mb-0.5">{loc.address}</p>}
+                  {loc.tagline && <p className="text-xs text-gray-500 italic line-clamp-1">{loc.tagline}</p>}
                   {loc.description && <p className="text-xs text-gray-400 line-clamp-1">{loc.description}</p>}
                 </div>
 
@@ -204,6 +256,10 @@ export default function AdminLocations() {
                     className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors" title="Toggle active">
                     {loc.active ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5" />}
                   </button>
+                  <Link to={`/admin/locations/${loc.id}/map`}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors" title="Edit floor map">
+                    <Map className="w-4 h-4" />
+                  </Link>
                   <button onClick={() => openEdit(loc)}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Edit">
                     <Edit className="w-4 h-4" />

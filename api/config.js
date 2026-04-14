@@ -3,7 +3,7 @@
 // POST /api/config  — upsert app config keys
 import { withDb, setCors } from './_db.js'
 
-const ALLOWED_KEYS = ['appName', 'logo', 'primaryColor', 'secondaryColor']
+const ALLOWED_KEYS = ['appName', 'tagline', 'logo', 'primaryColor', 'secondaryColor']
 
 export default async function handler(req, res) {
   setCors(res)

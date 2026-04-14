@@ -81,16 +81,21 @@ export function updateMemberStatus(id, status) {
 
 const DEFAULT_CONFIG = {
   dbUrl: '',
-  appName: 'Trinity Hub',
-  logo: '/trinity-logo.svg',
-  primaryColor: '#231F20',
-  secondaryColor: '#4a4547',
+  appName: 'SpaceBooker',
+  tagline: 'Reserve rooms, desks and meeting spaces — quickly and easily.',
+  logo: '',
+  primaryColor: '#2563eb',
+  secondaryColor: '#0891b2',
 }
 
 export function getConfig() {
   try {
     const raw = localStorage.getItem(KEYS.CONFIG)
-    return raw ? { ...DEFAULT_CONFIG, ...JSON.parse(raw) } : DEFAULT_CONFIG
+    if (!raw) return DEFAULT_CONFIG
+    const saved = JSON.parse(raw)
+    // Discard any legacy file-path logo (only accept data URLs or empty)
+    if (saved.logo && !saved.logo.startsWith('data:')) saved.logo = ''
+    return { ...DEFAULT_CONFIG, ...saved }
   } catch {
     return DEFAULT_CONFIG
   }

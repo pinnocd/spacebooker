@@ -97,6 +97,8 @@ export function AppProvider({ children }) {
       if (!configRes.error && configRes.data && Object.keys(configRes.data).length > 0) {
         const local = getConfig()
         const merged = { ...local, ...configRes.data, dbUrl: local.dbUrl }
+        // Discard legacy file-path logos (only accept data URLs or empty)
+        if (merged.logo && !merged.logo.startsWith('data:')) merged.logo = ''
         saveConfig(merged)
         setConfigState(merged)
         applyBrandColors(merged)

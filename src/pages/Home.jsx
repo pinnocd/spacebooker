@@ -1,15 +1,14 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, MapPin, ChevronRight, Map, ChevronDown } from 'lucide-react'
+import { Building2, MapPin, ChevronRight, ChevronDown } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { format } from 'date-fns'
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
 export default function Home() {
   const { spaces, hours, locations, config } = useApp()
-  const logo = config?.appName ? config.logo : ''
+  const logo = config?.logo || ''
   const appName = config?.appName || 'SpaceBooker'
+  const tagline = config?.tagline || 'Reserve rooms, desks and meeting spaces — quickly and easily.'
 
   const todayDayNum = new Date().getDay()
   const todayHours = hours[todayDayNum]
@@ -38,26 +37,10 @@ export default function Home() {
             : <Building2 className="w-6 h-6 sm:w-12 sm:h-12 opacity-80" />
           }
         </div>
-        <h1 className="text-base sm:text-4xl font-bold mb-1 sm:mb-3">Book a space to use at the Trinity Hub</h1>
-        <p className="hidden sm:block text-white/80 text-lg max-w-xl mx-auto mb-0">
-          Reserve rooms, desks and the Main Hall — quickly and easily.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-2 sm:mt-5">
-          {isTodayClosed ? (
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-gray-300" />
-              Office closed today ({DAY_NAMES[todayDayNum]})
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400" />
-              Open today {todayHours.open} – {todayHours.close}
-            </div>
-          )}
-          <Link to="/map" className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-colors">
-            <Map className="w-3.5 h-3.5" /> View floor map
-          </Link>
-        </div>
+        <h1 className="text-base sm:text-4xl font-bold mb-1 sm:mb-3">{appName}</h1>
+        {tagline && (
+          <p className="hidden sm:block text-white/80 text-lg max-w-xl mx-auto mb-0">{tagline}</p>
+        )}
       </div>
 
       {hasLocations ? (

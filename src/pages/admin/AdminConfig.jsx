@@ -59,7 +59,8 @@ export default function AdminConfig() {
   const logoInputRef = useRef(null)
 
   // Form state
-  const [appName, setAppName] = useState('OfficeBook')
+  const [appName, setAppName] = useState('SpaceBooker')
+  const [tagline, setTagline] = useState('')
   const [logo, setLogo] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#2563eb')
   const [secondaryColor, setSecondaryColor] = useState('#7c3aed')
@@ -74,7 +75,8 @@ export default function AdminConfig() {
 
   useEffect(() => {
     const cfg = getConfig()
-    setAppName(cfg.appName || 'OfficeBook')
+    setAppName(cfg.appName || 'SpaceBooker')
+    setTagline(cfg.tagline || '')
     setLogo(cfg.logo || '')
     setPrimaryColor(cfg.primaryColor || '#2563eb')
     setSecondaryColor(cfg.secondaryColor || '#7c3aed')
@@ -82,7 +84,8 @@ export default function AdminConfig() {
     // Check if DB is reachable and load any newer values from it
     fetchConfigFromApi().then(({ data, error }) => {
       if (!error && data && Object.keys(data).length > 0) {
-        if (data.appName)        setAppName(data.appName)
+        if (data.appName)           setAppName(data.appName)
+        if (data.tagline !== undefined) setTagline(data.tagline ?? '')
         if (data.logo !== undefined) setLogo(data.logo)
         if (data.primaryColor)   setPrimaryColor(data.primaryColor)
         if (data.secondaryColor) setSecondaryColor(data.secondaryColor)
@@ -110,7 +113,8 @@ export default function AdminConfig() {
     setDbError('')
 
     const cfg = {
-      appName: appName.trim() || 'OfficeBook',
+      appName: appName.trim() || 'SpaceBooker',
+      tagline: tagline.trim(),
       logo,
       primaryColor,
       secondaryColor,
@@ -162,8 +166,18 @@ export default function AdminConfig() {
             <label className="label" htmlFor="app-name">Application name</label>
             <input id="app-name" type="text" value={appName}
               onChange={(e) => setAppName(e.target.value)}
-              placeholder="OfficeBook" className="input max-w-xs" />
+              placeholder="SpaceBooker" className="input max-w-xs" />
             <p className="mt-1 text-xs text-gray-400">Shown in the navbar and browser tab.</p>
+          </div>
+
+          {/* Tagline */}
+          <div>
+            <label className="label" htmlFor="tagline">Hero tagline</label>
+            <input id="tagline" type="text" value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              placeholder="Reserve rooms, desks and meeting spaces — quickly and easily."
+              className="input" />
+            <p className="mt-1 text-xs text-gray-400">Subtitle shown on the home page hero. Leave blank to hide.</p>
           </div>
 
           {/* Logo upload */}
@@ -229,9 +243,9 @@ export default function AdminConfig() {
               <div className="px-4 py-2 flex items-center gap-3" style={{ backgroundColor: primaryColor }}>
                 {logo
                   ? <img src={logo} alt="" className="h-6 object-contain" />
-                  : <span className="font-bold text-white text-sm">{appName || 'OfficeBook'}</span>
+                  : <span className="font-bold text-white text-sm">{appName || 'SpaceBooker'}</span>
                 }
-                {logo && <span className="font-bold text-white text-sm">{appName || 'OfficeBook'}</span>}
+                {logo && <span className="font-bold text-white text-sm">{appName || 'SpaceBooker'}</span>}
               </div>
               <div className="p-4 bg-gray-50 flex items-center gap-3">
                 <button type="button" className="px-4 py-2 rounded-lg text-sm font-medium text-white"

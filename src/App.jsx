@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { Shield } from 'lucide-react'
 import { AppProvider, useApp } from './context/AppContext'
@@ -19,13 +19,33 @@ import AdminConfig from './pages/admin/AdminConfig'
 import AdminBookings from './pages/admin/AdminBookings'
 import AdminMap from './pages/admin/AdminMap'
 import AdminLocations from './pages/admin/AdminLocations'
+import AdminLocationMap from './pages/admin/AdminLocationMap'
 import SpaceMap from './pages/SpaceMap'
 import LocationSpaces from './pages/LocationSpaces'
 import VerifyEmail from './pages/VerifyEmail'
 
 function AppShell() {
   const { config } = useApp()
-  const appName = config?.appName || 'OfficeBook'
+  const appName = config?.appName || 'SpaceBooker'
+  const logo = config?.logo || ''
+
+  useEffect(() => {
+    document.title = appName
+  }, [appName])
+
+  useEffect(() => {
+    const link = document.getElementById('app-favicon')
+    if (!link) return
+    if (logo) {
+      link.href = logo
+      // Detect mime type from data URL or fall back to png
+      const mime = logo.startsWith('data:') ? logo.split(';')[0].slice(5) : 'image/png'
+      link.type = mime
+    } else {
+      link.href = '/favicon.svg'
+      link.type = 'image/svg+xml'
+    }
+  }, [logo])
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -46,6 +66,7 @@ function AppShell() {
               <Route path="/admin/bookings" element={<ProtectedRoute><AdminBookings /></ProtectedRoute>} />
               <Route path="/admin/map" element={<ProtectedRoute><AdminMap /></ProtectedRoute>} />
               <Route path="/admin/locations" element={<ProtectedRoute><AdminLocations /></ProtectedRoute>} />
+              <Route path="/admin/locations/:locationId/map" element={<ProtectedRoute><AdminLocationMap /></ProtectedRoute>} />
               <Route path="/map" element={<SpaceMap />} />
               <Route path="/location/:locationId" element={<LocationSpaces />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
