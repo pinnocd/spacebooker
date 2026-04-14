@@ -60,63 +60,65 @@ export default function LocationSpaces() {
 
       {/* Location header */}
       <div className="card overflow-hidden mb-6">
-        {/* Photo carousel (only when photos exist) */}
-        {images.length > 0 && (
-          <div className="relative h-48 sm:h-64 bg-gray-100">
-            <img src={images[imgIndex]} alt={location.name} className="w-full h-full object-cover" />
-            {images.length > 1 && (
-              <>
-                <button onClick={() => setImgIndex(i => (i - 1 + images.length) % images.length)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center">
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button onClick={() => setImgIndex(i => (i + 1) % images.length)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center">
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {images.map((_, i) => (
-                    <button key={i} onClick={() => setImgIndex(i)}
-                      className={`w-1.5 h-1.5 rounded-full transition-colors ${i === imgIndex ? 'bg-white' : 'bg-white/50'}`} />
-                  ))}
-                </div>
-              </>
+        <div className="flex flex-col sm:flex-row items-stretch">
+          {/* Left: logo + details */}
+          <div className="p-5 flex items-stretch gap-5 flex-1 min-w-0">
+            {location.logo && (
+              <div className="flex-shrink-0 rounded-xl overflow-hidden border border-gray-100 bg-gray-50"
+                style={{ minWidth: '80px', maxWidth: '160px', width: '20%', alignSelf: 'stretch' }}>
+                <img src={location.logo} alt={`${location.name} logo`}
+                  className="w-full h-full object-contain" />
+              </div>
             )}
-          </div>
-        )}
-
-        {/* Details row — logo left, text right */}
-        <div className="p-5 flex items-stretch gap-5">
-          {location.logo && (
-            <div className="flex-shrink-0 rounded-xl overflow-hidden border border-gray-100 bg-gray-50"
-              style={{ minWidth: '80px', maxWidth: '160px', width: '20%', alignSelf: 'stretch' }}>
-              <img src={location.logo} alt={`${location.name} logo`}
-                className="w-full h-full object-contain" />
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900 mb-0.5">{location.name}</h1>
+              {location.tagline && <p className="text-sm text-gray-500 italic mb-1">{location.tagline}</p>}
+              {location.address && (
+                <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />{location.address}
+                </p>
+              )}
+              {location.description && <p className="text-sm text-gray-600 mt-2">{location.description}</p>}
+              <div className="flex items-center gap-2 mt-3">
+                {isTodayClosed ? (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-gray-500">
+                    <span className="w-2 h-2 rounded-full bg-gray-300" />
+                    Closed today ({DAY_NAMES[todayDayNum]})
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-green-600">
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    Open today {todayHours.open} – {todayHours.close}
+                  </span>
+                )}
+              </div>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 mb-0.5">{location.name}</h1>
-            {location.tagline && <p className="text-sm text-gray-500 italic mb-1">{location.tagline}</p>}
-            {location.address && (
-              <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />{location.address}
-              </p>
-            )}
-            {location.description && <p className="text-sm text-gray-600 mt-2">{location.description}</p>}
-            <div className="flex items-center gap-2 mt-3">
-              {isTodayClosed ? (
-                <span className="inline-flex items-center gap-1.5 text-sm text-gray-500">
-                  <span className="w-2 h-2 rounded-full bg-gray-300" />
-                  Closed today ({DAY_NAMES[todayDayNum]})
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 text-sm text-green-600">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
-                  Open today {todayHours.open} – {todayHours.close}
-                </span>
+          </div>
+
+          {/* Right: photo (50% on desktop, full-width on mobile) */}
+          {images.length > 0 && (
+            <div className="relative h-48 sm:h-auto sm:w-1/2 flex-shrink-0 bg-gray-100 overflow-hidden self-stretch">
+              <img src={images[imgIndex]} alt={location.name} className="absolute inset-0 w-full h-full object-cover" />
+              {images.length > 1 && (
+                <>
+                  <button onClick={() => setImgIndex(i => (i - 1 + images.length) % images.length)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => setImgIndex(i => (i + 1) % images.length)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {images.map((_, i) => (
+                      <button key={i} onClick={() => setImgIndex(i)}
+                        className={`w-1.5 h-1.5 rounded-full transition-colors ${i === imgIndex ? 'bg-white' : 'bg-white/50'}`} />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
