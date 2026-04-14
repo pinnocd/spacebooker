@@ -16,8 +16,8 @@ export default async function handler(req, res) {
       const result = {}
       for (const row of rows) {
         result[row.day_of_week] = {
-          open: row.open_time,
-          close: row.close_time,
+          open: row.open_time.slice(0, 5),
+          close: row.close_time.slice(0, 5),
           closed: row.closed,
         }
       }

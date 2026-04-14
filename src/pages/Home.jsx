@@ -33,7 +33,7 @@ export default function Home() {
         style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)' }}>
         <div className="flex justify-center mb-2 sm:mb-5">
           {logo
-            ? <img src={logo} alt={appName} className="h-10 sm:h-24 w-auto object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
+            ? <img src={logo} alt={appName} className="h-10 sm:h-24 w-auto object-contain" />
             : <Building2 className="w-6 h-6 sm:w-12 sm:h-12 opacity-80" />
           }
         </div>
