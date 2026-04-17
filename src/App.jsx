@@ -23,6 +23,7 @@ import AdminLocationMap from './pages/admin/AdminLocationMap'
 import SpaceMap from './pages/SpaceMap'
 import LocationSpaces from './pages/LocationSpaces'
 import VerifyEmail from './pages/VerifyEmail'
+import AccountSettings from './pages/AccountSettings'
 
 function AppShell() {
   const { config } = useApp()
@@ -70,6 +71,7 @@ function AppShell() {
               <Route path="/map" element={<SpaceMap />} />
               <Route path="/location/:locationId" element={<LocationSpaces />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/account" element={<AccountSettings />} />
             </Routes>
           </main>
 

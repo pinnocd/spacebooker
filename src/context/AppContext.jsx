@@ -74,7 +74,9 @@ export function AppProvider({ children }) {
     setBookingsState(getBookings())
     setIsAdminState(isAdminLoggedIn())
     setCurrentUserState(getCurrentAdminUser())
-    setMemberState(getMemberSession())
+    const m = getMemberSession()
+    setMemberState(m)
+    document.documentElement.classList.toggle('dark', !!m?.darkMode)
     const cfg = getConfig()
     setConfigState(cfg)
     applyBrandColors(cfg)
@@ -165,15 +167,21 @@ export function AppProvider({ children }) {
     setIsAdminState(true)
   }, [])
 
+  const applyDarkMode = useCallback((enabled) => {
+    document.documentElement.classList.toggle('dark', !!enabled)
+  }, [])
+
   const loginMember = useCallback((m) => {
     setMemberSession(m)
     setMemberState(m)
-  }, [])
+    applyDarkMode(m?.darkMode)
+  }, [applyDarkMode])
 
   const logoutMember = useCallback(() => {
     setMemberSession(null)
     setMemberState(null)
-  }, [])
+    applyDarkMode(false)
+  }, [applyDarkMode])
 
   const setConfig = useCallback((v) => {
     saveConfig(v)

@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     // ── GET ────────────────────────────────────────────────────────────────
     if (req.method === 'GET') {
       const { rows } = await client.query(
-        `SELECT id, name, email, phone, status, created_at FROM members ORDER BY created_at DESC`
+        `SELECT id, name, email, phone, status, dark_mode, created_at FROM members ORDER BY created_at DESC`
       )
       return res.status(200).json(rows.map(normalise))
     }
@@ -87,13 +87,47 @@ export default async function handler(req, res) {
       return res.status(201).json({ pending: true })
     }
 
-    // ── PATCH ──────────────────────────────────────────────────────────────
+    // ── PATCH — admin status update ────────────────────────────────────────
     if (req.method === 'PATCH') {
       if (!id) return res.status(400).json({ error: 'id query param required' })
       const { status } = req.body || {}
       if (!status) return res.status(400).json({ error: 'status is required' })
       await client.query(`UPDATE members SET status = $2 WHERE id = $1`, [id, status])
       return res.status(200).json({ ok: true })
+    }
+
+    // ── PUT — member self-update (name, phone, optional password change) ───
+    if (req.method === 'PUT') {
+      if (!id) return res.status(400).json({ error: 'id query param required' })
+      const { name, phone, darkMode, currentPassword, newPassword } = req.body || {}
+
+      const { rows } = await client.query(
+        `SELECT id, name, email, phone, status, password, dark_mode, created_at FROM members WHERE id = $1`, [id]
+      )
+      if (rows.length === 0) return res.status(404).json({ error: 'Member not found' })
+      const existing = rows[0]
+
+      if (newPassword) {
+        if (!currentPassword) return res.status(400).json({ error: 'Current password is required to set a new password.' })
+        const valid = await bcrypt.compare(currentPassword, existing.password)
+        if (!valid) return res.status(401).json({ error: 'Current password is incorrect.' })
+        if (newPassword.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters.' })
+        const newHash = await bcrypt.hash(newPassword, 10)
+        await client.query(
+          `UPDATE members SET name=$2, phone=$3, password=$4, dark_mode=$5 WHERE id=$1`,
+          [id, name?.trim() || existing.name, phone?.trim() || null, newHash, darkMode ?? existing.dark_mode]
+        )
+      } else {
+        await client.query(
+          `UPDATE members SET name=$2, phone=$3, dark_mode=$4 WHERE id=$1`,
+          [id, name?.trim() || existing.name, phone?.trim() || null, darkMode ?? existing.dark_mode]
+        )
+      }
+
+      const { rows: updated } = await client.query(
+        `SELECT id, name, email, phone, status, dark_mode, created_at FROM members WHERE id=$1`, [id]
+      )
+      return res.status(200).json(normalise(updated[0]))
     }
 
     // ── DELETE ─────────────────────────────────────────────────────────────
@@ -108,5 +142,5 @@ export default async function handler(req, res) {
 }
 
 function normalise(row) {
-  return { id: row.id, name: row.name, email: row.email, phone: row.phone || null, status: row.status, createdAt: row.created_at }
+  return { id: row.id, name: row.name, email: row.email, phone: row.phone || null, status: row.status, darkMode: row.dark_mode ?? false, createdAt: row.created_at }
 }

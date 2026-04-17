@@ -63,4 +63,58 @@
   .brand-text      { color: var(--color-primary-text); }
   .brand-border    { border-color: var(--color-primary); }
   .brand-ring:focus { outline: none; box-shadow: 0 0 0 2px var(--color-primary); }
+
+  /* Dark mode overrides for semantic component classes */
+  .dark body        { @apply bg-gray-900 text-gray-100; }
+  .dark .card       { @apply bg-gray-800 border-gray-700; }
+  .dark .btn-secondary {
+    @apply bg-gray-700 text-gray-200 border-gray-600;
+  }
+  .dark .btn-secondary:hover { @apply bg-gray-600; }
+  .dark .input      { @apply bg-gray-700 border-gray-600 text-gray-100; }
+  .dark .input::placeholder { color: rgb(100 116 139); }
+  .dark .label      { @apply text-gray-300; }
+}
+
+/* ── Dark mode: remap common Tailwind utility classes ──────────────────────
+   Specificity of .dark .utility (0,2,0) beats .utility (0,1,0), so these
+   override Tailwind's generated utilities without touching any JSX.        */
+@layer utilities {
+  /* Backgrounds */
+  .dark .bg-white          { background-color: rgb(30 41 59);  }  /* slate-800  */
+  .dark .bg-gray-50        { background-color: rgb(15 23 42);  }  /* slate-900  */
+  .dark .bg-gray-100       { background-color: rgb(30 41 59);  }  /* slate-800  */
+  .dark .bg-gray-200       { background-color: rgb(51 65 85);  }  /* slate-700  */
+
+  .dark .hover\:bg-gray-50:hover   { background-color: rgb(30 41 59); }
+  .dark .hover\:bg-gray-100:hover  { background-color: rgb(51 65 85); }
+
+  /* Text */
+  .dark .text-gray-900     { color: rgb(248 250 252); }  /* slate-50   */
+  .dark .text-gray-800     { color: rgb(241 245 249); }  /* slate-100  */
+  .dark .text-gray-700     { color: rgb(226 232 240); }  /* slate-200  */
+  .dark .text-gray-600     { color: rgb(203 213 225); }  /* slate-300  */
+  .dark .text-gray-500     { color: rgb(148 163 184); }  /* slate-400  */
+  .dark .text-gray-400     { color: rgb(100 116 139); }  /* slate-500  */
+
+  /* Borders */
+  .dark .border-gray-200   { border-color: rgb(51 65 85);  }  /* slate-700 */
+  .dark .border-gray-100   { border-color: rgb(30 41 59);  }  /* slate-800 */
+
+  /* Coloured badge backgrounds — soften in dark mode */
+  .dark .bg-blue-100       { background-color: rgb(30 58 138 / 0.4); }
+  .dark .text-blue-800     { color: rgb(147 197 253); }  /* blue-300 */
+  .dark .bg-green-100      { background-color: rgb(20 83 45 / 0.4); }
+  .dark .text-green-800    { color: rgb(134 239 172); }  /* green-300 */
+  .dark .bg-red-50         { background-color: rgb(127 29 29 / 0.3); }
+  .dark .border-red-200    { border-color: rgb(153 27 27); }
+  .dark .text-red-700      { color: rgb(252 165 165); }  /* red-300 */
+  .dark .bg-blue-50        { background-color: rgb(30 58 138 / 0.25); }
+  .dark .border-blue-400   { border-color: rgb(96 165 250); }
+  .dark .bg-yellow-50      { background-color: rgb(113 63 18 / 0.3); }
+  .dark .border-yellow-200 { border-color: rgb(161 98 7); }
+  .dark .text-yellow-800   { color: rgb(253 224 71); }
+
+  /* Divide lines */
+  .dark .divide-gray-200 > * + * { border-color: rgb(51 65 85); }
 }

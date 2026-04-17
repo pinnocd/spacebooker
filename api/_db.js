@@ -63,7 +63,7 @@ export async function withDb(req, res, handler) {
 
 // Increment this whenever new migrations are added so already-running
 // servers re-run the DDL block on next request without needing a restart.
-const SCHEMA_VERSION = 4
+const SCHEMA_VERSION = 5
 let schemaVersion = 0
 
 /** Creates all tables if they don't already exist. Idempotent. */
@@ -192,6 +192,9 @@ async function _runSchemaDdl(client) {
       END IF;
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='locations' AND column_name='floor_map') THEN
         ALTER TABLE locations ADD COLUMN floor_map TEXT DEFAULT NULL;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='members' AND column_name='dark_mode') THEN
+        ALTER TABLE members ADD COLUMN dark_mode BOOLEAN NOT NULL DEFAULT false;
       END IF;
     END $$;
     -- Remove deprecated config key

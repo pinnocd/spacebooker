@@ -58,10 +58,10 @@ export default function Navbar() {
                   <BookOpen className="w-4 h-4" />My Bookings
                 </NavLink>
                 <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
-                  <span className="text-sm text-gray-700 font-medium flex items-center gap-1.5">
+                  <NavLink to="/account" className={navLinkClass}>
                     <User className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
                     {member.name.split(' ')[0]}
-                  </span>
+                  </NavLink>
                   <button onClick={handleLogout}
                     className="flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700 transition-colors">
                     <LogOut className="w-4 h-4" />Sign out
@@ -101,6 +101,9 @@ export default function Navbar() {
               <>
                 <NavLink to="/my-bookings" onClick={close} className={mobileNavClass}>
                   <BookOpen className="w-4 h-4" />My Bookings
+                </NavLink>
+                <NavLink to="/account" onClick={close} className={mobileNavClass}>
+                  <User className="w-4 h-4" />Account settings
                 </NavLink>
                 <div className="px-3 py-2 text-xs text-gray-400 font-medium">
                   Signed in as {member.name}

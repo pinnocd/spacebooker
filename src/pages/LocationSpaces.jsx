@@ -64,8 +64,8 @@ export default function LocationSpaces() {
           {/* Left: logo + details */}
           <div className="p-5 flex items-stretch gap-5 flex-1 min-w-0">
             {location.logo && (
-              <div className="flex-shrink-0 rounded-xl overflow-hidden border border-gray-100 bg-gray-50"
-                style={{ minWidth: '80px', maxWidth: '160px', width: '20%', alignSelf: 'stretch' }}>
+              <div className="flex-shrink-0 rounded-xl overflow-hidden border border-gray-200"
+                style={{ minWidth: '80px', maxWidth: '160px', width: '20%', alignSelf: 'stretch', background: 'white' }}>
                 <img src={location.logo} alt={`${location.name} logo`}
                   className="w-full h-full object-contain" />
               </div>

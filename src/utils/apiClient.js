@@ -116,6 +116,13 @@ export async function deleteMemberFromApi(id) {
   return apiFetch(`/members?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
+export async function updateMemberProfileInApi(id, updates) {
+  return apiFetch(`/members?id=${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  })
+}
+
 // ── Admin users ───────────────────────────────────────────────────────────
 
 export async function fetchAdminUsersFromApi() {
