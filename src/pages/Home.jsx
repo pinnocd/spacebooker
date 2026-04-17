@@ -180,6 +180,11 @@ function AllSpacesView({ spaces, hours, isTodayClosed, todayDayNum }) {
 export function SpaceCard({ space, member, isTodayClosed, todayBookings = [] }) {
   return (
     <div className="card hover:shadow-md transition-shadow duration-200 flex flex-col">
+      {space.images && space.images.length > 0 && (
+        <div className="h-40 bg-gray-100 overflow-hidden rounded-t-xl flex-shrink-0">
+          <img src={space.images[0]} alt={space.name} className="w-full h-full object-cover" />
+        </div>
+      )}
       <div className="p-3 sm:p-5 flex-1">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1">

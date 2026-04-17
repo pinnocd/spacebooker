@@ -7,6 +7,7 @@ import {
   Clock,
   Check,
   ChevronRight,
+  ChevronLeft,
   AlertCircle,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
@@ -19,6 +20,35 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 function timeToMinutes(t) {
   const [h, m] = t.split(':').map(Number)
   return h * 60 + m
+}
+
+function SpaceImages({ space }) {
+  const [imgIndex, setImgIndex] = useState(0)
+  const images = space.images || []
+  if (images.length === 0) return null
+  return (
+    <div className="relative h-48 sm:h-64 bg-gray-100">
+      <img src={images[imgIndex]} alt={space.name} className="w-full h-full object-cover" />
+      {images.length > 1 && (
+        <>
+          <button onClick={() => setImgIndex(i => (i - 1 + images.length) % images.length)}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button onClick={() => setImgIndex(i => (i + 1) % images.length)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center">
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, i) => (
+              <button key={i} onClick={() => setImgIndex(i)}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === imgIndex ? 'bg-white' : 'bg-white/50'}`} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 export default function BookSpace() {
@@ -365,41 +395,31 @@ export default function BookSpace() {
       </Link>
 
       {/* Space summary */}
-      <div className="card p-5 mb-6">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-6 h-6 text-blue-600" />
+      <div className="card overflow-hidden mb-6">
+        <SpaceImages space={space} />
+        <div className="p-5">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 className="text-xl font-bold text-gray-900">{space.name}</h1>
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                space.type === 'room' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+              }`}
+            >
+              {space.type === 'room' ? 'Room' : 'Desk'}
+            </span>
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-xl font-bold text-gray-900">{space.name}</h1>
-              <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  space.type === 'room'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-green-100 text-green-800'
-                }`}
-              >
-                {space.type === 'room' ? 'Room' : 'Desk'}
-              </span>
-            </div>
-            <p className="text-sm text-gray-500 mb-2">{space.description}</p>
-            <div className="flex items-center gap-1.5 text-sm text-gray-600">
-              <Users className="w-4 h-4 text-gray-400" />
-              <span>
-                Up to {space.capacity} {space.capacity === 1 ? 'person' : 'people'}
-              </span>
-            </div>
-            {space.amenities && space.amenities.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {space.amenities.map((a) => (
-                  <span key={a} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-                    {a}
-                  </span>
-                ))}
-              </div>
-            )}
+          <p className="text-sm text-gray-500 mb-2">{space.description}</p>
+          <div className="flex items-center gap-1.5 text-sm text-gray-600">
+            <Users className="w-4 h-4 text-gray-400" />
+            <span>Up to {space.capacity} {space.capacity === 1 ? 'person' : 'people'}</span>
           </div>
+          {space.amenities && space.amenities.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {space.amenities.map((a) => (
+                <span key={a} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{a}</span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
